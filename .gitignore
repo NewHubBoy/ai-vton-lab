@@ -1,0 +1,75 @@
+# OS
+.DS_Store
+._.DS_Store
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Python
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+venv/
+.venv/
+migrations/
+db.sqlite3*
+
+# Node
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Build outputs
+dist
+dist-ssr
+coverage
+stats.html
+/.next
+/out
+/build
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Env
+.env*
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Misc
+*.local
+*.pem
+AGENTS.md
+CLAUDE.md
+ai_try_on_ui_requirements_v1.1.md
+ProjectPlan.md
+.claude/settings.local.json
+*.claude
+*/*.claude
+*.mcp.json
+*/*.mcp.json
