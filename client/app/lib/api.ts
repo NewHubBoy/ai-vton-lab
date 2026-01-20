@@ -17,8 +17,6 @@ async function request<T>(
 
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFkbWluIiwiaXNfc3VwZXJ1c2VyIjp0cnVlLCJleHAiOjE3Njk1MDkzNzh9.5jI6mMx9vDrDBPj3RCQ1ONW3PDLNXjzOfh3lZNLb6s0`,
-        'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFkbWluIiwiaXNfc3VwZXJ1c2VyIjp0cnVlLCJleHAiOjE3Njk1MDkzNzh9.5jI6mMx9vDrDBPj3RCQ1ONW3PDLNXjzOfh3lZNLb6s0',
         ...options.headers,
     };
 
