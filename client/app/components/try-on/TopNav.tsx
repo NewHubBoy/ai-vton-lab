@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Scissors, User } from 'lucide-react';
+import { Sparkles, User } from 'lucide-react';
 
 export function TopNav() {
   return (
@@ -13,7 +13,7 @@ export function TopNav() {
     >
       <div className="flex items-center gap-2.5">
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500">
-          <Scissors className="w-4 h-4 text-white" />
+          <Sparkles className="w-4 h-4 text-white" />
         </div>
         <h1 className="text-base font-semibold text-zinc-900 dark:text-white tracking-tight">
           AI VTON
