@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Sparkles } from 'lucide-react';
+import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -12,6 +13,36 @@ export default function LoginPage() {
     e.preventDefault();
     // TODO: 实现登录逻辑
     console.log('Login:', { email, password, rememberMe });
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    console.log('Google Login Success:', credentialResponse);
+
+    // credentialResponse.credential 是一个 JWT token
+    // 你需要将它发送到后端进行验证
+    if (credentialResponse.credential) {
+      try {
+        const response = await fetch('http://localhost:3001/api/v1/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: credentialResponse.credential }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Google login API error');
+        }
+
+        const data = await response.json();
+        console.log('Backend response:', data);
+        // TODO: 保存 token 并跳转到主页
+      } catch (error) {
+        console.error('Google login API error:', error);
+      }
+    }
+  };
+
+  const handleGoogleError = () => {
+    console.error('Google Login Failed');
   };
 
   return (
@@ -139,7 +170,7 @@ export default function LoginPage() {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-4">
-              <a
+              {/* <a
                 href="#"
                 className="flex w-full items-center justify-center gap-3 rounded-md bg-white px-3 py-2.5 text-sm font-semibold text-gray-900 shadow-xs inset-ring inset-ring-gray-300 hover:bg-gray-50 focus-visible:inset-ring-transparent dark:bg-white/10 dark:text-white dark:shadow-none dark:inset-ring-white/5 dark:hover:bg-white/20"
               >
@@ -162,11 +193,19 @@ export default function LoginPage() {
                   />
                 </svg>
                 <span className="text-sm/6 font-semibold">Google</span>
-              </a>
-
+              </a> */}
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                theme="outline"
+                size="large"
+                text="signin_with"
+                shape="rectangular"
+                useOneTap={false}
+              />
               <a
-                href="#"
-                className="flex w-full items-center justify-center gap-3 rounded-md bg-white px-3 py-2.5 text-sm font-semibold text-gray-900 shadow-xs inset-ring inset-ring-gray-300 hover:bg-gray-50 focus-visible:inset-ring-transparent dark:bg-white/10 dark:text-white dark:shadow-none dark:inset-ring-white/5 dark:hover:bg-white/20"
+                href="http://localhost:3001/api/v1/auth/github"
+                className="flex h-10 w-full items-center justify-center gap-3 rounded bg-white px-3 text-sm font-semibold text-gray-900 shadow-xs inset-ring inset-ring-gray-200 hover:bg-gray-50 focus-visible:inset-ring-transparent dark:bg-white/10 dark:text-white dark:shadow-none dark:inset-ring-white/5 dark:hover:bg-white/20"
               >
                 <svg
                   fill="currentColor"
@@ -189,7 +228,7 @@ export default function LoginPage() {
         <p className="mt-10 text-center text-sm/6 text-gray-500 dark:text-gray-400">
           还没有账号?{' '}
           <a
-            href="#"
+            href="/register"
             className="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
           >
             免费注册

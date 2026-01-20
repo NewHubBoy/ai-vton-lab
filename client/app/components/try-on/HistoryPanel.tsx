@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Clock } from 'lucide-react';
+import { Clock, RefreshCw, Loader2 } from 'lucide-react';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -15,27 +15,30 @@ import {
 } from '@/components/ui/dialog';
 import { useState } from 'react';
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { useTaskHistory } from '@/app/hooks/useTaskHistory';
+import { ImageTaskDetail } from '@/app/lib/api';
 
-// Mock history data
-const historyItems = [
-  { id: 1, thumbnail: 'https://picsum.photos/200/300?random=1', time: '2 min ago' },
-  { id: 2, thumbnail: 'https://picsum.photos/200/300?random=2', time: '5 min ago' },
-  { id: 3, thumbnail: 'https://picsum.photos/200/300?random=3', time: '10 min ago' },
-  { id: 4, thumbnail: 'https://picsum.photos/200/300?random=4', time: '15 min ago' },
-  { id: 5, thumbnail: 'https://picsum.photos/200/300?random=5', time: '20 min ago' },
-  { id: 6, thumbnail: 'https://picsum.photos/200/300?random=6', time: '25 min ago' },
-  { id: 7, thumbnail: 'https://picsum.photos/200/300?random=7', time: '30 min ago' },
-  { id: 8, thumbnail: 'https://picsum.photos/200/300?random=8', time: '35 min ago' },
-  { id: 9, thumbnail: 'https://picsum.photos/200/300?random=9', time: '40 min ago' },
-  { id: 10, thumbnail: 'https://picsum.photos/200/300?random=10', time: '45 min ago' },
-  { id: 11, thumbnail: 'https://picsum.photos/200/300?random=11', time: '50 min ago' },
-  { id: 12, thumbnail: 'https://picsum.photos/200/300?random=12', time: '55 min ago' },
-  { id: 13, thumbnail: 'https://picsum.photos/200/300?random=13', time: '60 min ago' },
-  { id: 14, thumbnail: 'https://picsum.photos/200/300?random=14', time: '65 min ago' },
-];
+// 格式化时间
+function formatTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
 
-function HistoryCard({ item }: { item: typeof historyItems[0] }) {
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min ago`;
+
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
+}
+
+function HistoryCard({ task }: { task: ImageTaskDetail }) {
   const [open, setOpen] = useState(false);
+  const thumbnail = task.result?.images?.[0]?.url || 'https://via.placeholder.com/200x300?text=No+Image';
+  const time = formatTime(task.created_at);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -45,14 +48,24 @@ function HistoryCard({ item }: { item: typeof historyItems[0] }) {
         >
           <AspectRatio ratio={6 / 9}>
             <img
-              src={item.thumbnail}
-              alt={`History ${item.id}`}
+              src={thumbnail}
+              alt={`Task ${task.task_id}`}
               className="w-full h-full object-cover"
             />
+            {/* 状态指示器 */}
+            {task.status === 'queued' || task.status === 'running' ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                <Loader2 className="w-6 h-6 text-white animate-spin" />
+              </div>
+            ) : task.status === 'failed' ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-red-500/40">
+                <span className="text-xs text-white font-medium">Failed</span>
+              </div>
+            ) : null}
           </AspectRatio>
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
           <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent px-2 py-1.5">
-            <span className="text-[10px] text-white font-medium">{item.time}</span>
+            <span className="text-[10px] text-white font-medium">{time}</span>
           </div>
         </motion.div>
       </DialogTrigger>
@@ -61,24 +74,22 @@ function HistoryCard({ item }: { item: typeof historyItems[0] }) {
         <DialogOverlay className="bg-black/85 backdrop-blur-md" />
         <DialogContent className="max-w-3xl h-[90vh] p-0 flex items-center justify-center bg-transparent border-none shadow-none">
           <VisuallyHidden>
-            <DialogTitle>{item.id}</DialogTitle>
+            <DialogTitle>{task.prompt}</DialogTitle>
           </VisuallyHidden>
           <motion.div
             className="relative w-full h-full flex items-center justify-center"
           >
-            {/* Close button */}
             <DialogClose />
 
-            {/* Image */}
             <img
-              src={item.thumbnail}
-              alt={`History ${item.id}`}
+              src={thumbnail}
+              alt={`Task ${task.task_id}`}
               className="h-full object-contain rounded-xl"
             />
 
-            {/* Time badge */}
-            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-black/60 backdrop-blur-sm">
-              <span className="text-sm text-white font-medium">{item.time}</span>
+            {/* Prompt badge */}
+            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-black/60 backdrop-blur-sm max-w-md">
+              <span className="text-sm text-white font-medium line-clamp-2">{task.prompt}</span>
             </div>
           </motion.div>
         </DialogContent>
@@ -88,6 +99,11 @@ function HistoryCard({ item }: { item: typeof historyItems[0] }) {
 }
 
 export function HistoryPanel() {
+  const { tasks, isLoading, error, refresh, hasMore, loadMore } = useTaskHistory({ limit: 20 });
+
+  // 过滤只显示完成的任务
+  const completedTasks = tasks.filter(t => t.status === 'succeeded' && t.result?.images?.[0]?.url);
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -95,9 +111,19 @@ export function HistoryPanel() {
       transition={{ delay: 0.25 }}
       className="space-y-3"
     >
-      <div className="flex items-center gap-2">
-        <Clock className="w-4 h-4 text-zinc-400" />
-        <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">History</h3>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-zinc-400" />
+          <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">History</h3>
+        </div>
+        <button
+          onClick={refresh}
+          disabled={isLoading}
+          className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+          title="Refresh"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 text-zinc-400 ${isLoading ? 'animate-spin' : ''}`} />
+        </button>
       </div>
 
       <div className="relative h-[calc(100vh-121px)]">
@@ -106,9 +132,40 @@ export function HistoryPanel() {
 
         <ScrollArea className="h-full [&>[data-slot=scroll-area-scrollbar]]:hidden">
           <div className="grid gap-4 py-2 px-1">
-            {historyItems.map((item) => (
-              <HistoryCard key={item.id} item={item} />
-            ))}
+            {isLoading && completedTasks.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 text-zinc-400 animate-spin" />
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <p className="text-xs text-red-500">{error}</p>
+                <button
+                  onClick={refresh}
+                  className="mt-2 text-xs text-zinc-500 hover:text-zinc-700"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : completedTasks.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-xs text-zinc-400">No history yet</p>
+              </div>
+            ) : (
+              <>
+                {completedTasks.map((task) => (
+                  <HistoryCard key={task.task_id} task={task} />
+                ))}
+                {hasMore && (
+                  <button
+                    onClick={loadMore}
+                    disabled={isLoading}
+                    className="text-xs text-zinc-500 hover:text-zinc-700 py-2"
+                  >
+                    {isLoading ? 'Loading...' : 'Load more'}
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </ScrollArea>
 
