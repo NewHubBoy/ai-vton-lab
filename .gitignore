@@ -63,10 +63,14 @@ next-env.d.ts
 
 # Misc
 *.local
+
 *.pem
 AGENTS.md
 CLAUDE.md
 ai_try_on_ui_requirements_v1.1.md
+fastapi_google_image_async_plan.md
+fastapi_image_async_simple_plan.md
+fastapi_image_async_ws_plan.md
 ProjectPlan.md
 .claude/settings.local.json
 *.claude

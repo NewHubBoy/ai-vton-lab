@@ -13,7 +13,7 @@ from app.core.init_app import (
 
 try:
     from app.settings.config import settings
-except ImportError:
+except ImportNotFoundError:
     raise SettingNotFound("Can not import settings")
 
 
@@ -23,6 +23,12 @@ async def lifespan(app: FastAPI):
     await Tortoise.init(config=settings.get_tortoise_orm())
     await Tortoise.generate_schemas()
     await init_data()
+
+    # 启动图像生成 Worker（在主事件循环中运行）
+    from app.core.image_worker import worker_loop
+    import asyncio
+    asyncio.create_task(worker_loop())
+
     yield
     await Tortoise.close_connections()
 

@@ -1,0 +1,245 @@
+"""
+图像生成 API
+
+提供图像生成任务的创建、查询、列表接口。
+
+可扩展：
+- 限流: 使用 Redis 实现用户级/系统级限流
+- 计费: 集成用户积分/配额系统
+- Webhook: 支持回调 URL 通知
+"""
+
+from datetime import datetime
+from typing import Optional
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+
+from app.core.dependency import AuthControl
+from app.core.image_client import create_batch_job, get_batch_job_status, get_batch_results
+from app.models import User
+from app.models.image_task import ImageTask
+from app.schemas.image_task import (
+    ImageTaskRequest,
+    ImageTaskResponse,
+    ImageTaskDetailResponse,
+    ImageTaskListResponse,
+    BatchImageTaskRequest,
+    BatchImageTaskResponse,
+    BatchTaskStatusResponse,
+    BatchTaskResultResponse,
+)
+
+router = APIRouter(prefix="")
+
+
+@router.post("/generate", response_model=ImageTaskResponse)
+async def create_image_task(request: ImageTaskRequest, current_user: User = Depends(AuthControl.is_authed)):
+    """
+    创建图像生成任务
+
+    可扩展：
+    - 幂等控制: 使用 Idempotency-Key 避免重复创建
+    - 限流检查: 检查用户并发任务数
+    - 配额检查: 检查用户剩余配额
+    """
+    # 创建任务
+    task = ImageTask(
+        id=str(uuid.uuid4()),
+        user_id=str(current_user.id),
+        prompt=request.prompt,
+        reference_images=request.reference_images,
+        aspect_ratio=request.aspect_ratio,
+        resolution=request.resolution,
+        status="queued",
+    )
+    await task.save()
+
+    return {
+        "task_id": task.id,
+        "status": task.status,
+        "created_at": task.created_at,
+    }
+
+
+@router.get("/tasks/{task_id}", response_model=ImageTaskDetailResponse)
+async def get_task(task_id: str, current_user: User = Depends(AuthControl.is_authed)):
+    """
+    查询任务详情
+
+    可扩展：
+    - 结果签名URL: 生成带签名的图片下载URL
+    - 部分结果: 支持只返回进度信息
+    """
+    task = await ImageTask.get_or_none(id=task_id, user_id=str(current_user.id))
+    if not task:
+        raise HTTPException(status_code=404, detail="任务不存在")
+
+    return {
+        "task_id": task.id,
+        "status": task.status,
+        "prompt": task.prompt,
+        "aspect_ratio": task.aspect_ratio,
+        "resolution": task.resolution,
+        "result": task.result_json,
+        "error": {"code": task.error_code, "message": task.error_message} if task.error_code else None,
+        "created_at": task.created_at,
+        "started_at": task.started_at,
+        "finished_at": task.finished_at,
+    }
+
+
+@router.get("/tasks", response_model=ImageTaskListResponse)
+async def list_tasks(
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    status: Optional[str] = Query(default=None, description="状态筛选"),
+    current_user: User = Depends(AuthControl.is_authed),
+):
+    """
+    获取用户任务列表
+
+    可扩展：
+    - 分页优化: 使用游标分页替代 offset
+    - 排序: 支持按创建时间/状态排序
+    - 搜索: 支持 prompt 关键词搜索
+    """
+    query = ImageTask.filter(user_id=str(current_user.id))
+
+    if status:
+        query = query.filter(status=status)
+
+    total = await query.count()
+    tasks = await query.order_by("-created_at").offset(offset).limit(limit)
+
+    return {
+        "tasks": [
+            {
+                "task_id": t.id,
+                "status": t.status,
+                "prompt": t.prompt,
+                "aspect_ratio": t.aspect_ratio,
+                "resolution": t.resolution,
+                "result": t.result_json,
+                "error": {"code": t.error_code, "message": t.error_message} if t.error_code else None,
+                "created_at": t.created_at,
+                "started_at": t.started_at,
+                "finished_at": t.finished_at,
+            }
+            for t in tasks
+        ],
+        "total": total,
+    }
+
+
+# ============ Batch API 端点 ============
+
+@router.post("/batch-generate", response_model=BatchImageTaskResponse)
+async def create_batch_image_task(
+    request: BatchImageTaskRequest,
+    current_user: User = Depends(AuthControl.is_authed),
+):
+    """
+    创建批量图像生成任务（使用 Gemini Batch API，50% 价格）
+
+    特点：
+    - 价格：标准价格的 50%
+    - 处理时间：目标 24 小时内完成（通常更快）
+    - 适用场景：离线批量处理，无需实时结果
+
+    限制：
+    - 每次最多 100 个 prompt
+    - 不支持参考图片
+    """
+    if len(request.prompts) > 100:
+        raise HTTPException(status_code=400, detail="每次最多支持 100 个 prompt")
+
+    # 创建 Gemini Batch 任务
+    result = create_batch_job(
+        prompts=request.prompts,
+        aspect_ratio=request.aspect_ratio,
+        resolution=request.resolution,
+    )
+
+    if result["status"] != "success":
+        raise HTTPException(status_code=500, detail=f"创建批量任务失败: {result.get('error')}")
+
+    # 创建本地记录
+    batch_id = str(uuid.uuid4())
+    batch_task = ImageTask(
+        id=batch_id,
+        user_id=str(current_user.id),
+        prompt=f"Batch task with {len(request.prompts)} prompts",
+        aspect_ratio=request.aspect_ratio,
+        resolution=request.resolution,
+        status="queued",
+        result_json={"batch_name": result["batch_name"], "task_count": len(request.prompts)},
+    )
+    await batch_task.save()
+
+    return {
+        "batch_id": batch_id,
+        "batch_name": result["batch_name"],
+        "task_count": len(request.prompts),
+        "status": "queued",
+        "estimated_completion_hours": 24,
+        "created_at": datetime.utcnow(),
+    }
+
+
+@router.get("/batch/{batch_name}/status", response_model=BatchTaskStatusResponse)
+async def get_batch_task_status(
+    batch_name: str,
+    current_user: User = Depends(AuthControl.is_authed),
+):
+    """
+    查询批量任务状态
+
+    返回：
+    - state: 任务状态（PENDING, RUNNING, SUCCEEDED, FAILED）
+    - completed_count: 已完成数量（如果有）
+    """
+    result = get_batch_job_status(batch_name)
+
+    if result["status"] != "success":
+        raise HTTPException(status_code=500, detail=f"查询状态失败: {result.get('error')}")
+
+    return {
+        "batch_name": batch_name,
+        "status": result.get("status", "unknown"),
+        "state": result.get("state", "UNKNOWN"),
+        "task_count": 0,  # Batch API 不直接返回数量
+        "completed_count": None,
+        "error": None,
+    }
+
+
+@router.get("/batch/{batch_name}/results", response_model=BatchTaskResultResponse)
+async def get_batch_task_results(
+    batch_name: str,
+    current_user: User = Depends(AuthControl.is_authed),
+):
+    """
+    获取批量任务结果
+
+    注意：仅在任务状态为 SUCCEEDED 时调用
+    """
+    # 先检查状态
+    status_result = get_batch_job_status(batch_name)
+    if status_result.get("state", "").upper() != "SUCCEEDED":
+        raise HTTPException(
+            status_code=400,
+            detail=f"任务尚未完成，当前状态: {status_result.get('state', 'UNKNOWN')}"
+        )
+
+    # 获取结果
+    result = get_batch_results(batch_name)
+
+    if result["status"] != "success":
+        raise HTTPException(status_code=500, detail=f"获取结果失败: {result.get('error')}")
+
+    return {
+        "batch_name": batch_name,
+        "status": "success",
+        "results": result.get("results", []),
+    }

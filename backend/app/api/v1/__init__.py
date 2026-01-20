@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.core.dependency import DependPermission
+from app.core.dependency import DependPermission, DependAuth
 
 from .apis import apis_router
 from .auditlog import auditlog_router
@@ -9,6 +9,8 @@ from .depts import depts_router
 from .menus import menus_router
 from .roles import roles_router
 from .users import users_router
+from .images import images_router
+from .ws import ws_router
 
 v1_router = APIRouter()
 
@@ -19,3 +21,8 @@ v1_router.include_router(menus_router, prefix="/menu", dependencies=[DependPermi
 v1_router.include_router(apis_router, prefix="/api", dependencies=[DependPermission])
 v1_router.include_router(depts_router, prefix="/dept", dependencies=[DependPermission])
 v1_router.include_router(auditlog_router, prefix="/auditlog", dependencies=[DependPermission])
+
+# 图像生成相关路由（AuthControl 在路由内部处理）
+v1_router.include_router(images_router, prefix="/images", dependencies=[DependAuth])
+# WebSocket 路由（独立挂载）
+v1_router.include_router(ws_router, prefix="/ws", dependencies=[DependAuth])
