@@ -25,6 +25,11 @@ db.sqlite3*
 
 # Node
 node_modules/
+# /frontend/node_modules/
+# /backend/web/node_modules/
+*/node_modules
+*/*/node_modules
+*/*/*/node_modules
 .pnp
 .pnp.*
 .yarn/*
@@ -39,6 +44,7 @@ dist-ssr
 coverage
 stats.html
 /.next
+*/.next
 /out
 /build
 

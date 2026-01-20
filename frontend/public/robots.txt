@@ -1,0 +1,6 @@
+# AI Fashion - Robots.txt
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://aifashion.pro/sitemap.xml
