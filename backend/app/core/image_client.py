@@ -91,26 +91,49 @@ ASPECT_RATIO_MAP = {
 }
 
 
+def load_dotenv_files() -> bool:
+    """加载所有可能的 .env 文件"""
+    if not load_dotenv:
+        return False
+
+    script_dir = Path(__file__).parent
+    for env_file in [
+        script_dir / ".env",
+        script_dir.parent / ".env",
+        script_dir.parent.parent / ".env",  # backend/.env
+        Path(".claude") / ".env",
+        Path(__file__).parent.parent.parent.parent / ".env",  # 项目根目录/.env
+    ]:
+        if env_file.exists():
+            load_dotenv(env_file)
+    return True
+
+
 def find_api_key() -> Optional[str]:
     """查找 Gemini API key"""
     api_key = os.getenv("GEMINI_API_KEY")
     if api_key:
         return api_key
 
-    if load_dotenv:
-        script_dir = Path(__file__).parent
-        for env_file in [
-            script_dir / ".env",
-            script_dir.parent / ".env",
-            Path(".claude") / ".env",
-        ]:
-            if env_file.exists():
-                load_dotenv(env_file)
-                api_key = os.getenv("GEMINI_API_KEY")
-                if api_key:
-                    return api_key
+    load_dotenv_files()
+    return os.getenv("GEMINI_API_KEY")
 
-    return None
+
+def find_model() -> str:
+    """查找 Gemini 模型名称，默认 gemini-2.5-flash"""
+    load_dotenv_files()
+    return os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
+
+def is_development() -> bool:
+    """判断是否是开发环境"""
+    env = os.getenv("ENV", "").lower()
+    return env in ("dev", "development", "")
+
+
+def is_verbose_default() -> bool:
+    """开发环境 verbose 默认 true"""
+    return is_development()
 
 
 def get_mime_type(file_path: str) -> str:
@@ -130,17 +153,18 @@ def get_mime_type(file_path: str) -> str:
 class BatchImageClient:
     """Gemini Batch API 图像生成客户端（50% 价格，24小时内完成）"""
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         """初始化客户端
 
         Args:
             api_key: Gemini API key，如果未提供则自动查找
+            model: 模型名称，如果未提供则从环境变量读取
         """
         self.api_key = api_key or find_api_key()
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY not found. Set via environment variable or .env file.")
         self.client = genai.Client(api_key=self.api_key)
-        self.model = "gemini-2.5-flash"
+        self.model = model or find_model()
 
     def _get_output_dir(self) -> Path:
         """获取输出目录"""
@@ -242,7 +266,7 @@ class BatchImageClient:
         try:
             batch_job = self.client.models.batch_create_content(name=batch_name)
             return {
-                "status": batch_job.state.name if hasattr(batch_job.state, 'name') else str(batch_job.state),
+                "status": batch_job.state.name if hasattr(batch_job.state, "name") else str(batch_job.state),
                 "state": str(batch_job.state),
             }
         except Exception as e:
@@ -299,7 +323,7 @@ class BatchImageClient:
             }
 
             # 获取结果
-            if hasattr(batch_job, 'results') and batch_job.results:
+            if hasattr(batch_job, "results") and batch_job.results:
                 for i, result in enumerate(batch_job.results):
                     result_item = {
                         "task_index": i,
@@ -308,7 +332,7 @@ class BatchImageClient:
                     }
 
                     # 处理生成的图像
-                    if hasattr(result, 'response'):
+                    if hasattr(result, "response"):
                         for part in result.response.candidates[0].content.parts:
                             if part.inline_data:
                                 output_file = output_dir / f"batch_{batch_name.split('/')[-1]}_{i}.png"
@@ -358,16 +382,18 @@ class BatchImageClient:
 class ImageClient:
     """Google Gen SDK 图像生成客户端"""
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         """初始化客户端
 
         Args:
             api_key: Gemini API key，如果未提供则自动查找
+            model: 模型名称，如果未提供则从环境变量读取
         """
         self.api_key = api_key or find_api_key()
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY not found. " "Set via environment variable or .env file.")
         self.client = genai.Client(api_key=self.api_key)
+        self.model = model or find_model()
 
     def _get_output_dir(self) -> Path:
         """获取输出目录"""
@@ -393,8 +419,8 @@ class ImageClient:
         aspect_ratio: str = "1:1",
         resolution: str = "1K",
         output_filename: Optional[str] = None,
-        model: str = "gemini-2.5-flash",
-        verbose: bool = False,
+        model: Optional[str] = None,
+        verbose: Optional[bool] = None,
     ) -> Dict[str, Any]:
         """生成图像
 
@@ -404,8 +430,8 @@ class ImageClient:
             aspect_ratio: 宽高比，默认为 "1:1"
             resolution: 分辨率，默认为 "1K"
             output_filename: 输出文件名（不含扩展名）
-            model: 使用的模型，默认为 gemini-2.5-flash
-            verbose: 是否显示详细信息
+            model: 使用的模型，默认使用初始化时的模型（从 GEMINI_MODEL 环境变量读取）
+            verbose: 是否显示详细信息，开发环境默认为 true
 
         Returns:
             包含生成结果的字典
@@ -413,6 +439,11 @@ class ImageClient:
         Raises:
             ValueError: 参数无效时抛出
         """
+        # 使用实例的默认模型
+        model = model or self.model
+        # 开发环境默认启用 verbose
+        verbose = verbose if verbose is not None else is_verbose_default()
+
         # 验证参数
         if aspect_ratio not in AspectRatio.values():
             raise ValueError(f"Invalid aspect_ratio: {aspect_ratio}. " f"Must be one of: {AspectRatio.values()}")
@@ -502,8 +533,8 @@ def generate_image(
     resolution: str = "1K",
     output_filename: Optional[str] = None,
     api_key: Optional[str] = None,
-    model: str = "gemini-2.5-flash",
-    verbose: bool = False,
+    model: Optional[str] = None,
+    verbose: Optional[bool] = None,
 ) -> Dict[str, Any]:
     """便捷函数：生成图像
 
@@ -514,20 +545,19 @@ def generate_image(
         resolution: 分辨率，默认为 "1K"
         output_filename: 输出文件名（不含扩展名）
         api_key: Gemini API key
-        model: 使用的模型
-        verbose: 是否显示详细信息
+        model: 使用的模型，默认从 GEMINI_MODEL 环境变量读取
+        verbose: 是否显示详细信息，开发环境默认为 true
 
     Returns:
         包含生成结果的字典
     """
-    client = ImageClient(api_key=api_key)
+    client = ImageClient(api_key=api_key, model=model)
     return client.generate(
         prompt=prompt,
         reference_images=reference_images,
         aspect_ratio=aspect_ratio,
         resolution=resolution,
         output_filename=output_filename,
-        model=model,
         verbose=verbose,
     )
 
@@ -622,11 +652,19 @@ if __name__ == "__main__":
     parser.add_argument("--aspect-ratio", default="1:1", choices=AspectRatio.values(), help="宽高比 (默认: 1:1)")
     parser.add_argument("--resolution", default="1K", choices=Resolution.values(), help="分辨率 (默认: 1K)")
     parser.add_argument("--output", dest="output_filename", help="输出文件名（不含扩展名）")
-    parser.add_argument("--model", default="gemini-2.5-flash", help="使用的模型 (默认: gemini-2.5-flash)")
-    parser.add_argument("--verbose", "-v", action="store_true", help="显示详细信息")
+    parser.add_argument("--model", default=None, help=f"使用的模型 (默认: 从 GEMINI_MODEL 环境变量读取，当前: {find_model()})")
+    parser.add_argument(
+        "--verbose", "-v", dest="verbose", default=None, action="store_true", help="显示详细信息 (开发环境默认启用)"
+    )
+    parser.add_argument(
+        "--quiet", "-q", dest="verbose", action="store_false", help="静默模式 (禁用 verbose)"
+    )
     parser.add_argument("--dry-run", action="store_true", help="模拟运行，不调用 API")
 
     args = parser.parse_args()
+    # 开发环境默认启用 verbose
+    if args.verbose is None:
+        args.verbose = is_verbose_default()
 
     if args.dry_run:
         print("DRY RUN MODE")

@@ -52,7 +52,6 @@ async def process_single_task(task: ImageTask) -> bool:
     await ws_manager.push_task_update(
         task_id=task.id,
         status="running",
-        progress=None,
     )
 
     # 调用生成（支持重试）

@@ -140,7 +140,7 @@ class HttpAuditLogMiddleware(BaseHTTPMiddleware):
                 and request.method in route.methods
             ):
                 data["module"] = ",".join(route.tags)
-                data["summary"] = route.summary
+                data["summary"] = route.summary or request.url.path
         # 获取用户信息
         try:
             token = request.headers.get("token")

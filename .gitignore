@@ -77,3 +77,4 @@ ProjectPlan.md
 */*.claude
 *.mcp.json
 */*.mcp.json
+/docs
