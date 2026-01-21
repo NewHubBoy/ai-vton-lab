@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { imageApi, ImageTaskDetail } from '@/app/lib/api';
+import { imageApi, ImageTaskDetail } from '@/lib/api';
 
 interface UseTaskHistoryOptions {
     limit?: number;

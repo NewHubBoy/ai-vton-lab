@@ -3,8 +3,8 @@
 import { useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
-import { useTryOnStore, ImageFile } from '@/app/lib/store';
-import { generateId, cn } from '@/app/lib/utils';
+import { useTryOnStore, ImageFile } from '@/lib/store';
+import { generateId, cn } from '@/lib/utils';
 
 interface ModelUploaderProps {
   className?: string;

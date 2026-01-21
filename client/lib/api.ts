@@ -22,6 +22,7 @@ async function request<T>(
 
     if (token) {
         (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+        (headers as Record<string, string>)['token'] = `${token}`;
     }
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {

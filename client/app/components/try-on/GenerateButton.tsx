@@ -2,8 +2,8 @@
 
 import { motion } from 'framer-motion';
 import { Sparkles, Loader2, Wifi, WifiOff } from 'lucide-react';
-import { useTryOnStore } from '@/app/lib/store';
-import { useGeneration } from '@/app/hooks/useGeneration';
+import { useTryOnStore } from '@/lib/store';
+import { useGeneration } from '@/hooks/useGeneration';
 
 export function GenerateButton() {
   const { canGenerate } = useTryOnStore();

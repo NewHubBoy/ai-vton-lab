@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getWsUrl } from '@/app/lib/api';
+import { getWsUrl } from '@/lib/api';
 
 export type WSStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 

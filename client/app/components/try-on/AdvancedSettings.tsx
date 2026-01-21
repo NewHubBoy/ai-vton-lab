@@ -2,8 +2,8 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings2, ChevronDown } from 'lucide-react';
-import { useTryOnStore } from '@/app/lib/store';
-import { cn } from '@/app/lib/utils';
+import { useTryOnStore } from '@/lib/store';
+import { cn } from '@/lib/utils';
 
 const resolutions = ['1K', '2K', '4K'] as const;
 const aspectRatios = ['1:1', '4:5', '9:16', '16:9'] as const;

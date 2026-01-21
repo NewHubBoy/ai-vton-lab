@@ -9,8 +9,8 @@ import {
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
-import { useTryOnStore } from '@/app/lib/store';
-import { cn } from '@/app/lib/utils';
+import { useTryOnStore } from '@/lib/store';
+import { cn } from '@/lib/utils';
 
 export function ResultCanvas() {
   const { resultImage, isGenerating, error, setResultImage } = useTryOnStore();

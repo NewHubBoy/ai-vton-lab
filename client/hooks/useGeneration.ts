@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';
-import { useTryOnStore } from '@/app/lib/store';
-import { imageApi } from '@/app/lib/api';
+import { useTryOnStore } from '@/lib/store';
+import { imageApi } from '@/lib/api';
 import { useWebSocket } from './useWebSocket';
 
 const POLL_INTERVAL = 2000; // 轮询间隔 2 秒

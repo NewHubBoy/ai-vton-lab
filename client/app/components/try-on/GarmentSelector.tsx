@@ -3,8 +3,8 @@
 import { useCallback, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Plus } from 'lucide-react';
-import { useTryOnStore, ImageFile, GarmentType } from '@/app/lib/store';
-import { generateId, cn } from '@/app/lib/utils';
+import { useTryOnStore, ImageFile, GarmentType } from '@/lib/store';
+import { generateId, cn } from '@/lib/utils';
 
 interface GarmentSelectorProps {
   className?: string;

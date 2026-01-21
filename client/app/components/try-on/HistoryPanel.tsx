@@ -15,8 +15,8 @@ import {
 } from '@/components/ui/dialog';
 import { useState } from 'react';
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { useTaskHistory } from '@/app/hooks/useTaskHistory';
-import { ImageTaskDetail } from '@/app/lib/api';
+import { useTaskHistory } from '@/hooks/useTaskHistory';
+import { ImageTaskDetail } from '@/lib/api';
 
 // 格式化时间
 function formatTime(dateStr: string): string {

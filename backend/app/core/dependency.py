@@ -10,13 +10,34 @@ from app.settings import settings
 
 class AuthControl:
     @classmethod
-    async def is_authed(cls, token: str = Header(..., description="token验证")) -> Optional["User"]:
+    async def is_authed(
+        cls,
+        authorization: Optional[str] = Header(None, description="标准 Authorization 头 (Bearer token)"),
+        token: Optional[str] = Header(None, description="兼容旧版 token 头"),
+    ) -> Optional["User"]:
+        """
+        JWT 认证
+
+        支持两种方式获取 token：
+        1. 标准方式：Authorization: Bearer <token>
+        2. 兼容方式：token: <token>
+        """
+        # 优先使用 Authorization 头
+        actual_token = None
+        if authorization and authorization.startswith("Bearer "):
+            actual_token = authorization[7:]  # 去掉 "Bearer " 前缀
+        elif token:
+            actual_token = token
+
+        if not actual_token:
+            raise HTTPException(status_code=401, detail="缺少认证 Token")
+
         try:
-            if token == "dev":
+            if actual_token == "dev":
                 user = await User.filter().first()
                 user_id = user.id
             else:
-                decode_data = jwt.decode(token, settings.SECRET_KEY, algorithms=settings.JWT_ALGORITHM)
+                decode_data = jwt.decode(actual_token, settings.SECRET_KEY, algorithms=settings.JWT_ALGORITHM)
                 user_id = decode_data.get("user_id")
             user = await User.filter(id=user_id).first()
             if not user:
