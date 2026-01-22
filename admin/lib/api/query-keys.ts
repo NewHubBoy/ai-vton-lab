@@ -1,0 +1,33 @@
+'use client'
+
+// Query Keys Factory
+export const queryKeys = {
+  // Base
+  userInfo: ['userInfo'] as const,
+  userMenu: ['userMenu'] as const,
+  userApi: ['userApi'] as const,
+
+  // User
+  users: (params?: object) => ['users', params] as const,
+  user: (id: number) => ['user', id] as const,
+
+  // Role
+  roles: (params?: object) => ['roles', params] as const,
+  role: (id: number) => ['role', id] as const,
+  roleAuthorized: (id: number) => ['roleAuthorized', id] as const,
+
+  // Menu
+  menus: (params?: object) => ['menus', params] as const,
+  menu: (id: number) => ['menu', id] as const,
+
+  // API Management
+  apis: (params?: object) => ['apis', params] as const,
+  api: (id: number) => ['api', id] as const,
+
+  // Dept
+  depts: (params?: object) => ['depts', params] as const,
+  dept: (id: number) => ['dept', id] as const,
+
+  // Audit Log
+  auditLogs: (params?: object) => ['auditLogs', params] as const,
+}

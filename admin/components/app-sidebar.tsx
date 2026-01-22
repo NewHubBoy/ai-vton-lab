@@ -3,20 +3,21 @@
 import * as React from "react"
 import {
     BookOpen,
-    Bot,
     Command,
-    Frame,
-    LifeBuoy,
-    Map,
-    PieChart,
-    Send,
     Settings2,
     SquareTerminal,
+    LayoutDashboard,
+    Users,
+    UserCog,
+    Menu as MenuIcon,
+    Building2,
+    Shield,
+    FileText,
+    type LucideIcon,
 } from "lucide-react"
+import Link from "next/link"
 
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
-import { NavSecondary } from "@/components/nav-secondary"
 import {
     Sidebar,
     SidebarContent,
@@ -27,6 +28,87 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { NavUser } from "@/components/nav-user"
+import { useAuth } from "./auth-provider"
+
+// Icon 映射表
+const iconMap: Record<string, LucideIcon> = {
+    'dashboard': LayoutDashboard,
+    'user': Users,
+    'users': Users,
+    'role': UserCog,
+    'roles': UserCog,
+    'menu': MenuIcon,
+    'menus': MenuIcon,
+    'dept': Building2,
+    'depts': Building2,
+    'api': Shield,
+    'apis': Shield,
+    'auditlog': FileText,
+    'auditlogs': FileText,
+    'setting': Settings2,
+    'settings': Settings2,
+    'home': LayoutDashboard,
+    'guide': BookOpen,
+}
+
+// NavMain item 类型
+interface NavMainItem {
+    title: string
+    url: string
+    icon: LucideIcon
+    isActive?: boolean
+    items?: {
+        title: string
+        url: string
+    }[]
+}
+
+// 转换函数：将 menus 转换成 navMain 格式
+function transformMenusToNavMain(menus: any[]): NavMainItem[] {
+    if (!menus || menus.length === 0) return []
+
+    return menus.map((menu) => {
+        // 获取 icon：从 path 去掉 /，取最后一段作为 icon key
+        // 例如 /system/users -> users
+        const iconKey = menu.path ? menu.path.replace(/^\//, '').split('/').pop() || '' : ''
+        const IconComponent = iconKey ? iconMap[iconKey] || SquareTerminal : SquareTerminal
+
+        // 父级 path（用于拼接子菜单 URL）
+        const parentPath = menu.path || ''
+
+        // 转换子菜单
+        let items: { title: string; url: string; icon?: LucideIcon }[] | undefined
+        if (menu.children && menu.children.length > 0) {
+            items = menu.children.map((child: any) => {
+                // 拼接 URL：父级 path + 子菜单 path
+                let childUrl = parentPath + "/" + (child.path || '')
+                // /system 替换成 /dashboard
+                childUrl = childUrl.replace(/^\/system/, '/dashboard')
+
+                // 子菜单 icon
+                const childIconKey = child.path ? child.path.replace(/^\//, '').split('/').pop() || '' : ''
+                const childIcon = childIconKey ? iconMap[childIconKey] : undefined
+
+                return {
+                    title: child.name,
+                    url: childUrl || '#',
+                    icon: childIcon,
+                }
+            })
+        }
+
+        // 父级 URL 也需要替换 /system -> /dashboard
+        const parentUrl = (menu.path || '#').replace(/^\/system/, '/dashboard')
+
+        return {
+            title: menu.name,
+            url: parentUrl,
+            icon: IconComponent,
+            menu_type: menu.menu_type,
+            items,
+        }
+    })
+}
 
 const data = {
     user: {
@@ -34,151 +116,45 @@ const data = {
         email: "m@example.com",
         avatar: "/avatars/shadcn.jpg",
     },
-    navMain: [
-        {
-            title: "Playground",
-            url: "#",
-            icon: SquareTerminal,
-            isActive: true,
-            items: [
-                {
-                    title: "History",
-                    url: "#",
-                },
-                {
-                    title: "Starred",
-                    url: "#",
-                },
-                {
-                    title: "Settings",
-                    url: "#",
-                },
-            ],
-        },
-        {
-            title: "Models",
-            url: "#",
-            icon: Bot,
-            items: [
-                {
-                    title: "Genesis",
-                    url: "#",
-                },
-                {
-                    title: "Explorer",
-                    url: "#",
-                },
-                {
-                    title: "Quantum",
-                    url: "#",
-                },
-            ],
-        },
-        {
-            title: "Documentation",
-            url: "#",
-            icon: BookOpen,
-            items: [
-                {
-                    title: "Introduction",
-                    url: "#",
-                },
-                {
-                    title: "Get Started",
-                    url: "#",
-                },
-                {
-                    title: "Tutorials",
-                    url: "#",
-                },
-                {
-                    title: "Changelog",
-                    url: "#",
-                },
-            ],
-        },
-        {
-            title: "Settings",
-            url: "#",
-            icon: Settings2,
-            items: [
-                {
-                    title: "General",
-                    url: "#",
-                },
-                {
-                    title: "Team",
-                    url: "#",
-                },
-                {
-                    title: "Billing",
-                    url: "#",
-                },
-                {
-                    title: "Limits",
-                    url: "#",
-                },
-            ],
-        },
-    ],
-    navSecondary: [
-        {
-            title: "Support",
-            url: "#",
-            icon: LifeBuoy,
-        },
-        {
-            title: "Feedback",
-            url: "#",
-            icon: Send,
-        },
-    ],
-    projects: [
-        {
-            name: "Design Engineering",
-            url: "#",
-            icon: Frame,
-        },
-        {
-            name: "Sales & Marketing",
-            url: "#",
-            icon: PieChart,
-        },
-        {
-            name: "Travel",
-            url: "#",
-            icon: Map,
-        },
-    ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+    const { menus, user } = useAuth();
+
+    // 转换 menus 为 navMain 格式
+    const navMainItems = transformMenusToNavMain(menus)
+
+    // 使用用户信息或默认信息
+    const userInfo = user ? {
+        name: user.username,
+        email: user.email,
+        avatar: user.avatar || "/avatars/shadcn.jpg",
+    } : data.user
+
     return (
         <Sidebar variant="inset" {...props}>
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <a href="#">
+                            <Link href="/dashboard">
                                 <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                                     <Command className="size-4" />
                                 </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
-                                    <span className="truncate font-medium">Acme Inc</span>
-                                    <span className="truncate text-xs">Enterprise</span>
+                                    <span className="truncate font-medium">AI-VTON Admin</span>
+                                    <span className="truncate text-xs">管理系统</span>
                                 </div>
-                            </a>
+                            </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
             <SidebarContent>
-                <NavMain items={data.navMain} />
-                <NavProjects projects={data.projects} />
-                <NavSecondary items={data.navSecondary} className="mt-auto" />
+                <NavMain items={navMainItems.length > 0 ? navMainItems : []} />
             </SidebarContent>
             <SidebarFooter>
-                <NavUser user={data.user} />
+                <NavUser user={userInfo} />
             </SidebarFooter>
         </Sidebar>
     )
