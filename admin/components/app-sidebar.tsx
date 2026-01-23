@@ -14,6 +14,10 @@ import {
     Shield,
     FileText,
     type LucideIcon,
+    Album,
+    Siren,
+    TableOfContents,
+    CircleDollarSign,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -49,6 +53,20 @@ const iconMap: Record<string, LucideIcon> = {
     'settings': Settings2,
     'home': LayoutDashboard,
     'guide': BookOpen,
+    'business': Building2,
+    "models": Album,
+    'prompts': Siren,
+    'records': TableOfContents,
+    'topup': CircleDollarSign
+}
+
+// NavSubItem definition for children
+interface NavSubItem {
+    title: string
+    url: string
+    icon?: LucideIcon
+    menu_type?: string
+    sort?: number
 }
 
 // NavMain item 类型
@@ -57,57 +75,64 @@ interface NavMainItem {
     url: string
     icon: LucideIcon
     isActive?: boolean
-    items?: {
-        title: string
-        url: string
-    }[]
+    sort: number
+    menu_type?: string
+    items?: NavSubItem[]
 }
 
-// 转换函数：将 menus 转换成 navMain 格式
+// 转换函数：将 menus 转换成 navMain 格式 都通过 sort 排序
 function transformMenusToNavMain(menus: any[]): NavMainItem[] {
     if (!menus || menus.length === 0) return []
 
-    return menus.map((menu) => {
-        // 获取 icon：从 path 去掉 /，取最后一段作为 icon key
-        // 例如 /system/users -> users
-        const iconKey = menu.path ? menu.path.replace(/^\//, '').split('/').pop() || '' : ''
-        const IconComponent = iconKey ? iconMap[iconKey] || SquareTerminal : SquareTerminal
+    const navItems = menus
+        .filter(menu => !menu.is_hidden && menu.menu_type !== 'button')
+        .map((menu) => {
+            // 获取 icon：从 path 去掉 /，取最后一段作为 icon key
+            // 例如 /system/users -> users
+            const iconKey = menu.path ? menu.path.replace(/^\//, '').split('/').pop() || '' : ''
+            const IconComponent = iconKey ? iconMap[iconKey] || SquareTerminal : SquareTerminal
 
-        // 父级 path（用于拼接子菜单 URL）
-        const parentPath = menu.path || ''
+            // 父级 path（用于拼接子菜单 URL）
+            const parentPath = menu.path || ''
 
-        // 转换子菜单
-        let items: { title: string; url: string; icon?: LucideIcon }[] | undefined
-        if (menu.children && menu.children.length > 0) {
-            items = menu.children.map((child: any) => {
-                // 拼接 URL：父级 path + 子菜单 path
-                let childUrl = parentPath + "/" + (child.path || '')
-                // /system 替换成 /dashboard
-                childUrl = childUrl.replace(/^\/system/, '/dashboard')
+            // 转换子菜单
+            let items: NavSubItem[] | undefined
+            if (menu.children && menu.children.length > 0) {
+                items = menu.children
+                    .filter((child: any) => !child.is_hidden && child.menu_type !== 'button')
+                    .map((child: any) => {
+                        // 拼接 URL：父级 path + 子菜单 path
+                        let childUrl = parentPath.endsWith('/') ? parentPath + (child.path || '') : parentPath + "/" + (child.path || '')
 
-                // 子菜单 icon
-                const childIconKey = child.path ? child.path.replace(/^\//, '').split('/').pop() || '' : ''
-                const childIcon = childIconKey ? iconMap[childIconKey] : undefined
+                        // 子菜单 icon
+                        const childIconKey = child.path ? child.path.replace(/^\//, '').split('/').pop() || '' : ''
+                        const childIcon = childIconKey ? iconMap[childIconKey] : undefined
 
-                return {
-                    title: child.name,
-                    url: childUrl || '#',
-                    icon: childIcon,
-                }
-            })
-        }
+                        return {
+                            title: child.name,
+                            url: childUrl || '#',
+                            icon: childIcon,
+                            menu_type: child.menu_type,
+                            sort: child.order || 0,
+                        }
+                    })
+                // 对子菜单排序
+                items?.sort((a, b) => (a.sort || 0) - (b.sort || 0))
+            }
 
-        // 父级 URL 也需要替换 /system -> /dashboard
-        const parentUrl = (menu.path || '#').replace(/^\/system/, '/dashboard')
+            return {
+                title: menu.name,
+                url: menu.path || '#',
+                icon: IconComponent,
+                menu_type: menu.menu_type,
+                sort: menu.order || 0,
+                items,
+            }
+        })
 
-        return {
-            title: menu.name,
-            url: parentUrl,
-            icon: IconComponent,
-            menu_type: menu.menu_type,
-            items,
-        }
-    })
+    // 对主菜单排序
+    navItems.sort((a, b) => (a.sort || 0) - (b.sort || 0))
+    return navItems
 }
 
 const data = {

@@ -25,12 +25,22 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Vue FastAPI Admin"
     APP_DESCRIPTION: str = "Description"
 
-    CORS_ORIGINS: typing.List = ["*"]
+    CORS_ORIGINS: typing.List = ["http://localhost:3000", "http://127.0.0.1:3000"]
     CORS_ALLOW_CREDENTIALS: bool = True
     CORS_ALLOW_METHODS: typing.List = ["*"]
     CORS_ALLOW_HEADERS: typing.List = ["*"]
 
     DEBUG: bool = True
+
+    # 阿里云 OSS 配置
+    OSS_ACCESS_KEY_ID: str = ""
+    OSS_ACCESS_KEY_SECRET: str = ""
+    OSS_BUCKET_NAME: str = ""
+    OSS_ENDPOINT: str = "oss-cn-hangzhou.aliyuncs.com"
+    OSS_CDN_ENDPOINT: str = ""
+    OSS_USE_CDN: bool = False
+    OSS_FOLDER: str = "uploads"
+    OSS_USE_DATE_FOLDER: bool = True
 
     PROJECT_ROOT: str = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
     BASE_DIR: str = os.path.abspath(os.path.join(PROJECT_ROOT, os.pardir))

@@ -70,6 +70,7 @@ dependencies = [
     "pyproject-toml>=0.1.0",
     "uvloop==0.21.0 ; sys_platform != 'win32'",
     "google-genai (>=1.59.0,<2.0.0)",
+    "oss2>=2.18.0",
 ]
 
 [tool.black]
@@ -88,5 +89,8 @@ lint.ignore = [
 tortoise_orm = "app.settings.config:settings.get_tortoise_orm"
 location = "./migrations"
 src_folder = "./."
+[tool.poetry]
+package-mode = false
+
 [tool.poetry.dependencies]
 python = ">=3.11,<3.14"

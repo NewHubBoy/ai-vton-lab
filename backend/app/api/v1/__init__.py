@@ -7,6 +7,7 @@ from .auditlog import auditlog_router
 from .base import base_router
 from .depts import depts_router
 from .menus import menus_router
+from .oss import oss_router
 from .roles import roles_router
 from .users import users_router
 from .images import images_router
@@ -21,6 +22,8 @@ v1_router.include_router(menus_router, prefix="/menu", dependencies=[DependPermi
 v1_router.include_router(apis_router, prefix="/api", dependencies=[DependPermission])
 v1_router.include_router(depts_router, prefix="/dept", dependencies=[DependPermission])
 v1_router.include_router(auditlog_router, prefix="/auditlog", dependencies=[DependPermission])
+# OSS 上传路由（AuthControl 在路由内部处理）
+v1_router.include_router(oss_router, prefix="/oss", dependencies=[DependAuth])
 
 # 图像生成相关路由（AuthControl 在路由内部处理）
 v1_router.include_router(images_router, prefix="/images", dependencies=[DependAuth])

@@ -30,7 +30,7 @@ const mainNavItems: NavItem[] = [
   },
   {
     title: '用户管理',
-    href: '/dashboard/users',
+    href: '/system/users',
     icon: <Users className="h-4 w-4" />,
   },
 ]

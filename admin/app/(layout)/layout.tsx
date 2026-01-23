@@ -17,12 +17,12 @@ import {
 // 路由映射
 const routeMap: Record<string, string> = {
   '/dashboard': '仪表盘',
-  '/dashboard/users': '用户管理',
-  '/dashboard/roles': '角色管理',
-  '/dashboard/menus': '菜单管理',
-  '/dashboard/depts': '部门管理',
-  '/dashboard/apis': 'API管理',
-  '/dashboard/auditlogs': '审计日志',
+  '/system/users': '用户管理',
+  '/system/roles': '角色管理',
+  '/system/menus': '菜单管理',
+  '/system/depts': '部门管理',
+  '/system/apis': 'API管理',
+  '/system/auditlogs': '审计日志',
 }
 
 export default function DashboardLayout({

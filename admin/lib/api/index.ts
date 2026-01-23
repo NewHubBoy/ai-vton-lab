@@ -138,21 +138,23 @@ export interface Menu {
   id: number
   parent_id: number
   name: string
-  title: string
   icon?: string
-  path?: string
-  component?: string
-  sort: number
-  type: 'dir' | 'menu' | 'btn'
-  visible: boolean
-  is_cache: boolean
-  is_affix: boolean
+  path: string
+  component: string
+  order: number
+  menu_type: 'catalog' | 'menu' | 'button'
+  is_hidden: boolean
+  keepalive: boolean
+  redirect?: string
   children?: Menu[]
+  created_at?: string
+  updated_at?: string
+  remark?: string | null
 }
 
 export interface MenuListParams {
-  title?: string
-  type?: string
+  name?: string
+  menu_type?: string
 }
 
 export const menuApi = {
@@ -165,7 +167,7 @@ export const menuApi = {
     apiClient.post<Menu>('/menu/create', data),
 
   // 更新菜单
-  update: (data: Partial<Menu> & { menu_id: number }) =>
+  update: (data: Partial<Menu> & { id: number }) =>
     apiClient.post<Menu>('/menu/update', data),
 
   // 删除菜单

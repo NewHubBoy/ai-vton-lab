@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/auth-provider'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, UserCog, Menu as MenuIcon, Building2, Shield, Activity } from 'lucide-react'
+import { VisitorChart, RequestChart } from '@/components/dashboard-charts'
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -80,7 +81,13 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Recent activity */}
+      {/* Charts section */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <VisitorChart />
+        <RequestChart />
+      </div>
+
+      {/* Recent activity and quick actions */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
           <CardHeader>
@@ -121,22 +128,22 @@ export default function DashboardPage() {
           <CardContent>
             <div className="grid gap-2">
               <a
-                href="/dashboard/users"
-                className="flex items-center gap-2 rounded-lg border p-3 hover:bg-accent"
+                href="/system/users"
+                className="flex items-center gap-2 rounded-lg border p-3 hover:bg-accent transition-colors"
               >
                 <Users className="h-4 w-4" />
                 <span className="text-sm">用户管理</span>
               </a>
               <a
-                href="/dashboard/roles"
-                className="flex items-center gap-2 rounded-lg border p-3 hover:bg-accent"
+                href="/system/roles"
+                className="flex items-center gap-2 rounded-lg border p-3 hover:bg-accent transition-colors"
               >
                 <UserCog className="h-4 w-4" />
                 <span className="text-sm">角色管理</span>
               </a>
               <a
-                href="/dashboard/menus"
-                className="flex items-center gap-2 rounded-lg border p-3 hover:bg-accent"
+                href="/system/menus"
+                className="flex items-center gap-2 rounded-lg border p-3 hover:bg-accent transition-colors"
               >
                 <MenuIcon className="h-4 w-4" />
                 <span className="text-sm">菜单管理</span>
