@@ -12,6 +12,8 @@ from .roles import roles_router
 from .users import users_router
 from .images import images_router
 from .ws import ws_router
+from .model_photo import model_photo_router
+from .prompt_config import prompt_config_router
 
 v1_router = APIRouter()
 
@@ -29,3 +31,7 @@ v1_router.include_router(oss_router, prefix="/oss", dependencies=[DependAuth])
 v1_router.include_router(images_router, prefix="/images", dependencies=[DependAuth])
 # WebSocket 路由（独立挂载）
 v1_router.include_router(ws_router, prefix="/ws", dependencies=[DependAuth])
+
+# 新增路由
+v1_router.include_router(model_photo_router, prefix="/model-photo", dependencies=[DependAuth])
+v1_router.include_router(prompt_config_router, prefix="/prompt-config", dependencies=[DependAuth])

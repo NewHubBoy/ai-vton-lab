@@ -1,3 +1,3 @@
-from .config import settings as settings
+from .config import settings, TORTOISE_ORM
 
-TORTOISE_ORM = settings.TORTOISE_ORM
+__all__ = ["settings", "TORTOISE_ORM"]

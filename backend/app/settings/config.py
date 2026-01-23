@@ -91,3 +91,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+TORTOISE_ORM = settings.get_tortoise_orm()

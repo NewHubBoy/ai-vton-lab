@@ -86,7 +86,7 @@ lint.ignore = [
 ]
 
 [tool.aerich]
-tortoise_orm = "app.settings.config:settings.get_tortoise_orm"
+tortoise_orm = "app.settings.TORTOISE_ORM"
 location = "./migrations"
 src_folder = "./."
 [tool.poetry]
