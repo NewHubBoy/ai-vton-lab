@@ -293,3 +293,70 @@ export const auditLogApi = {
   getList: (params?: AuditLogListParams) =>
     apiClient.get<AuditLogListResponse>('/auditlog/list', params),
 }
+
+// ============ Prompt Config APIs ============
+
+export interface PromptConfigGroup {
+  id: number
+  group_key: string
+  group_name: string
+  description?: string
+  input_type: string
+  is_multiple: boolean
+  is_required: boolean
+  placeholder?: string
+  default_option_key?: string
+  sort_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface PromptConfigGroupListResponse {
+  data: PromptConfigGroup[]
+  total: number
+}
+
+export interface PromptConfigOption {
+  id: number
+  group_id: number
+  option_key: string
+  option_label: string
+  prompt_text?: string
+  negative_prompt?: string
+  prompt_order: number
+  image_url?: string
+  description?: string
+  sort_order: number
+  is_active: boolean
+  is_default: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface PromptConfigOptionListResponse {
+  data: PromptConfigOption[]
+  total: number
+}
+
+export const promptConfigApi = {
+  // --- Groups ---
+  getGroups: (params?: { is_active?: boolean }) =>
+    apiClient.getPaginated<PromptConfigGroup[]>('/prompt-config/groups', params),
+
+  createGroup: (data: Partial<PromptConfigGroup>) =>
+    apiClient.post<PromptConfigGroup>('/prompt-config/groups', data),
+
+  updateGroup: (data: Partial<PromptConfigGroup> & { id: number }) =>
+    apiClient.put<PromptConfigGroup>(`/prompt-config/groups/${data.id}`, data),
+
+  // --- Options ---
+  getOptions: (group_id: number, params?: { is_active?: boolean }) =>
+    apiClient.get<PromptConfigOption[]>(`/prompt-config/groups/${group_id}/options`, params),
+
+  createOption: (data: Partial<PromptConfigOption>) =>
+    apiClient.post<PromptConfigOption>('/prompt-config/options', data),
+
+  updateOption: (data: Partial<PromptConfigOption> & { id: number }) =>
+    apiClient.put<PromptConfigOption>(`/prompt-config/options/${data.id}`, data),
+}

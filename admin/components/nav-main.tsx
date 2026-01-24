@@ -46,7 +46,6 @@ export function NavMain({
                     const isCollapsible = hasChildren || item.menu_type === 'catalog'
                     // 如果是纯目录（不允许跳转），则主按钮作为触发器
                     const isCatalog = item.menu_type === 'catalog'
-                    console.log({ item }, isCollapsible, isCatalog)
                     if (!isCollapsible) {
                         return (
                             <SidebarMenuItem key={item.title}>

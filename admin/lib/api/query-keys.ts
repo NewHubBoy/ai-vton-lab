@@ -30,4 +30,8 @@ export const queryKeys = {
 
   // Audit Log
   auditLogs: (params?: object) => ['auditLogs', params] as const,
+
+  // Prompt Config
+  promptConfigGroups: (params?: object) => ['promptConfigGroups', params] as const,
+  promptConfigOptions: (groupId: number, params?: object) => ['promptConfigOptions', groupId, params] as const,
 }

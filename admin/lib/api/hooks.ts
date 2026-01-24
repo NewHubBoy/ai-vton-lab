@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from './query-keys'
-import { baseApi, userApi, roleApi, menuApi, apiManagementApi, deptApi, auditLogApi } from './index'
+import { baseApi, userApi, roleApi, menuApi, apiManagementApi, deptApi, auditLogApi, promptConfigApi } from './index'
 import { usePathname } from 'next/navigation'
 
 // ============ Base Hooks ============
@@ -323,5 +323,62 @@ export function useAuditLogs(params?: Parameters<typeof auditLogApi.getList>[0])
   return useQuery({
     queryKey: queryKeys.auditLogs(params as object),
     queryFn: () => auditLogApi.getList(params),
+  })
+}
+
+// ============ Prompt Config Hooks ============
+
+export function usePromptConfigGroups(params?: { is_active?: boolean }) {
+  return useQuery({
+    queryKey: queryKeys.promptConfigGroups(params),
+    queryFn: () => promptConfigApi.getGroups(params),
+  })
+}
+
+export function useCreatePromptConfigGroup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: promptConfigApi.createGroup,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['promptConfigGroups'] })
+    },
+  })
+}
+
+export function useUpdatePromptConfigGroup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: promptConfigApi.updateGroup,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['promptConfigGroups'] })
+    },
+  })
+}
+
+export function usePromptConfigOptions(groupId: number, params?: { is_active?: boolean }) {
+  return useQuery({
+    queryKey: queryKeys.promptConfigOptions(groupId, params),
+    queryFn: () => promptConfigApi.getOptions(groupId, params),
+    enabled: !!groupId,
+  })
+}
+
+export function useCreatePromptConfigOption() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: promptConfigApi.createOption,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['promptConfigOptions', variables.group_id] })
+    },
+  })
+}
+
+export function useUpdatePromptConfigOption() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: promptConfigApi.updateOption,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['promptConfigOptions', variables.group_id] })
+    },
   })
 }
