@@ -39,7 +39,7 @@ class OSSConfig:
         """获取基础访问 URL"""
         if self.use_cdn and self.cdn_endpoint:
             return f"https://{self.cdn_endpoint}"
-        return f"https://{self.endpoint}"
+        return f"https://{self.bucket_name}.{self.endpoint}"
 
 
 class OSSUploader:
@@ -179,8 +179,17 @@ class OSSUploader:
         try:
             bucket = self.config.bucket
             # 生成签名URL，有效期 expires 秒
-            url = bucket.sign_url('GET', object_name, expires)
-            return True, url
+            signed_url = bucket.sign_url('GET', object_name, expires)
+
+            # 解码 URL 中的编码字符，使其更易读
+            from urllib.parse import unquote
+            decoded_url = unquote(signed_url)
+
+            # 确保使用 https
+            if decoded_url.startswith("http://"):
+                decoded_url = "https://" + decoded_url[7:]
+
+            return True, decoded_url
 
         except Exception as e:
             return False, str(e)

@@ -97,7 +97,6 @@ export function ResultCanvas() {
             </button>
           </motion.div>
         )}
-
         {/* Result */}
         {resultImage && !isGenerating && (
           <motion.div
