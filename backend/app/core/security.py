@@ -3,6 +3,7 @@
 
 JWT 认证、Token 解析等功能。
 """
+
 import jwt
 from typing import Optional, Dict, Any
 
@@ -22,7 +23,7 @@ def decode_token(token: str) -> Dict[str, Any]:
     Raises:
         Exception: Token 无效或已过期
     """
-    return jwt.decode(token, settings.SECRET_KEY, algorithms=settings.JWT_ALGORITHM)
+    return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
 
 
 def create_token(payload: Dict[str, Any]) -> str:

@@ -7,6 +7,7 @@ WebSocket 连接管理器
 - 升级 Redis: 使用 Redis Pub/Sub 实现多实例间消息推送
 - 升级 Celery: Celery Worker 可以通过 Redis 发布任务更新消息
 """
+
 from typing import Dict, Optional
 import asyncio
 import json
@@ -101,7 +102,7 @@ class ConnectionManager:
         status: str,
         result: Optional[dict] = None,
         error: Optional[dict] = None,
-        finished_at: Optional[str] = None
+        finished_at: Optional[str] = None,
     ) -> int:
         """
         推送任务状态更新
@@ -211,17 +212,19 @@ async def handle_websocket_connection(websocket: WebSocket, token: str) -> Optio
     Returns:
         user_id 或 None（认证失败）
     """
+    # 必须先接受连接，否则无法关闭
+    await websocket.accept()
+
     # 验证 token
     try:
         payload = decode_token(token)
         user_id = str(payload.get("user_id"))
-    except Exception:
-        await websocket.close(code=4001, reason="Invalid token")
+    except Exception as e:
+        await websocket.close(code=4001, reason=f"Invalid token: {str(e)}")
         return None
 
-    # 建立连接
-    if not await ws_manager.connect(user_id, websocket):
-        return None
+    # 记录连接
+    ws_manager.connections[user_id] = websocket
 
     try:
         while True:

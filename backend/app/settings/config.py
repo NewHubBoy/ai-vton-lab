@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class DatabaseSettings(BaseSettings):
     """数据库配置"""
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     DB_TYPE: str = "mysql"  # sqlite, mysql, postgres
@@ -25,7 +26,12 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Vue FastAPI Admin"
     APP_DESCRIPTION: str = "Description"
 
-    CORS_ORIGINS: typing.List = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    CORS_ORIGINS: typing.List = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+    ]
     CORS_ALLOW_CREDENTIALS: bool = True
     CORS_ALLOW_METHODS: typing.List = ["*"]
     CORS_ALLOW_HEADERS: typing.List = ["*"]
@@ -48,6 +54,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "3488a63e1765035d386f05409663f55c83bfae3b3c61a932744b20ad14244dcf"  # openssl rand -hex 32
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 day
+
     # 根据 DB_TYPE 动态生成数据库连接配置
     @staticmethod
     def get_tortoise_orm():

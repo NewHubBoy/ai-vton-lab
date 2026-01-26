@@ -29,8 +29,8 @@ v1_router.include_router(oss_router, prefix="/oss", dependencies=[DependAuth])
 
 # 图像生成相关路由（AuthControl 在路由内部处理）
 v1_router.include_router(images_router, prefix="/images", dependencies=[DependAuth])
-# WebSocket 路由（独立挂载）
-v1_router.include_router(ws_router, prefix="/ws", dependencies=[DependAuth])
+# WebSocket 路由（不使用 DependAuth，因为 WebSocket 认证通过 query param token 在 handler 中处理）
+v1_router.include_router(ws_router, prefix="/ws")
 
 # 新增路由
 v1_router.include_router(model_photo_router, prefix="/model-photo", dependencies=[DependAuth])

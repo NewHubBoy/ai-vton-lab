@@ -1,25 +1,35 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Sparkles, ArrowRight, Loader2 } from 'lucide-react';
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import Link from 'next/link';
+import { useAuthStore } from '@/lib/store';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const router = useRouter();
+  const { login, isLoading, error, clearError } = useAuthStore();
+
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login:', { email, password, rememberMe });
+    clearError();
+
+    const success = await login({ username, password });
+    if (success) {
+      router.push('/model-change');
+    }
   };
 
   const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
     console.log('Google Login Success:', credentialResponse);
     if (credentialResponse.credential) {
       try {
-        const response = await fetch('http://localhost:3001/api/v1/auth/google', {
+        const response = await fetch('http://localhost:9999/api/v1/auth/google', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token: credentialResponse.credential }),
@@ -59,21 +69,29 @@ export default function LoginPage() {
             请登录您的账户以继续
           </p>
 
+          {/* Error message */}
+          {error && (
+            <div className="mt-4 rounded-md bg-red-50 p-4 dark:bg-red-900/20">
+              <p className="text-sm text-red-800 dark:text-red-400">{error}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="mt-8 space-y-6">
             <div>
-              <label htmlFor="email" className="block text-sm/6 font-medium text-gray-900 dark:text-white">
-                邮箱地址
+              <label htmlFor="username" className="block text-sm/6 font-medium text-gray-900 dark:text-white">
+                用户名
               </label>
               <div className="mt-2">
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
+                  id="username"
+                  name="username"
+                  type="text"
                   required
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   className="block w-full rounded-md bg-white px-3 py-2.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500"
+                  placeholder="请输入用户名"
                 />
               </div>
             </div>
@@ -92,6 +110,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="block w-full rounded-md bg-white px-3 py-2.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500"
+                  placeholder="请输入密码"
                 />
               </div>
             </div>
@@ -126,9 +145,11 @@ export default function LoginPage() {
             <div>
               <button
                 type="submit"
-                className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:shadow-none dark:hover:bg-indigo-400 dark:focus-visible:outline-indigo-500"
+                disabled={isLoading}
+                className="flex w-full justify-center items-center gap-2 rounded-md bg-indigo-600 px-3 py-2.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-indigo-500 dark:shadow-none dark:hover:bg-indigo-400 dark:focus-visible:outline-indigo-500"
               >
-                登录
+                {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isLoading ? '登录中...' : '登录'}
               </button>
             </div>
           </form>
@@ -171,7 +192,7 @@ export default function LoginPage() {
                 </div>
               </div>
               <a
-                href="http://localhost:3001/api/v1/auth/github"
+                href="http://localhost:9999/api/v1/auth/github"
                 className="flex h-10 w-full items-center justify-center gap-2 rounded bg-white px-3 text-sm font-semibold text-gray-900 shadow-xs inset-ring inset-ring-gray-200 hover:bg-gray-50 focus-visible:inset-ring-transparent dark:bg-white/10 dark:text-white dark:shadow-none dark:inset-ring-white/5 dark:hover:bg-white/20"
               >
                 <svg fill="currentColor" viewBox="0 0 20 20" aria-hidden="true" className="size-5 fill-[#24292F] dark:fill-white">
