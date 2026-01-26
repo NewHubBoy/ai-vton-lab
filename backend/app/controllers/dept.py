@@ -75,8 +75,8 @@ class DeptController(CRUDBase[Dept, DeptCreate, DeptUpdate]):
 
     @atomic()
     async def delete_dept(self, dept_id: int):
-        # 删除部门
-        obj = await self.get(id=dept_id)
+        # 软删除部门
+        obj = await self.model.get(id=dept_id)
         obj.is_deleted = True
         await obj.save()
         # 删除关系

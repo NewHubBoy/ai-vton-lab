@@ -10,7 +10,7 @@ class MenuController(CRUDBase[Menu, MenuCreate, MenuUpdate]):
         super().__init__(model=Menu)
 
     async def get_by_menu_path(self, path: str) -> Optional["Menu"]:
-        return await self.model.filter(path=path).first()
+        return await self.model.filter(path=path, is_deleted=False).first()
 
 
 menu_controller = MenuController()

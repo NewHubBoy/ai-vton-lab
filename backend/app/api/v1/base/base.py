@@ -52,11 +52,11 @@ async def get_user_menu():
     user_obj = await User.filter(id=user_id).first()
     menus: list[Menu] = []
     if user_obj.is_superuser:
-        menus = await Menu.all()
+        menus = await Menu.filter(is_deleted=False).all()
     else:
         role_objs: list[Role] = await user_obj.roles
         for role_obj in role_objs:
-            menu = await role_obj.menus
+            menu = await role_obj.menus.filter(is_deleted=False)
             menus.extend(menu)
         menus = list(set(menus))
     parent_menus: list[Menu] = []
@@ -79,13 +79,13 @@ async def get_user_api():
     user_id = CTX_USER_ID.get()
     user_obj = await User.filter(id=user_id).first()
     if user_obj.is_superuser:
-        api_objs: list[Api] = await Api.all()
+        api_objs: list[Api] = await Api.filter(is_deleted=False).all()
         apis = [api.method.lower() + api.path for api in api_objs]
         return Success(data=apis)
     role_objs: list[Role] = await user_obj.roles
     apis = []
     for role_obj in role_objs:
-        api_objs: list[Api] = await role_obj.apis
+        api_objs: list[Api] = await role_obj.apis.filter(is_deleted=False)
         apis.extend([api.method.lower() + api.path for api in api_objs])
     apis = list(set(apis))
     return Success(data=apis)

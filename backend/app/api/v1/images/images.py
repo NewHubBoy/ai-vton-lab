@@ -14,6 +14,7 @@ from typing import Optional
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 
 from app.core.dependency import AuthControl
 from app.core.image_client import create_batch_job, get_batch_job_status, get_batch_results
@@ -71,7 +72,7 @@ async def get_task(task_id: str, current_user: User = Depends(AuthControl.is_aut
     - 结果签名URL: 生成带签名的图片下载URL
     - 部分结果: 支持只返回进度信息
     """
-    task = await ImageTask.get_or_none(id=task_id, user_id=str(current_user.id))
+    task = await ImageTask.get_or_none(id=task_id, user_id=str(current_user.id), is_deleted=False)
     if not task:
         raise HTTPException(status_code=404, detail="任务不存在")
 
@@ -104,7 +105,7 @@ async def list_tasks(
     - 排序: 支持按创建时间/状态排序
     - 搜索: 支持 prompt 关键词搜索
     """
-    query = ImageTask.filter(user_id=str(current_user.id))
+    query = ImageTask.filter(user_id=str(current_user.id), is_deleted=False)
 
     if status:
         query = query.filter(status=status)
@@ -133,6 +134,7 @@ async def list_tasks(
 
 
 # ============ Batch API 端点 ============
+
 
 @router.post("/batch-generate", response_model=BatchImageTaskResponse)
 async def create_batch_image_task(
@@ -227,10 +229,7 @@ async def get_batch_task_results(
     # 先检查状态
     status_result = get_batch_job_status(batch_name)
     if status_result.get("state", "").upper() != "SUCCEEDED":
-        raise HTTPException(
-            status_code=400,
-            detail=f"任务尚未完成，当前状态: {status_result.get('state', 'UNKNOWN')}"
-        )
+        raise HTTPException(status_code=400, detail=f"任务尚未完成，当前状态: {status_result.get('state', 'UNKNOWN')}")
 
     # 获取结果
     result = get_batch_results(batch_name)
@@ -242,4 +241,136 @@ async def get_batch_task_results(
         "batch_name": batch_name,
         "status": "success",
         "results": result.get("results", []),
+    }
+
+
+# ============ Admin API 端点 ============
+
+
+class AdminImageTaskResponse(BaseModel):
+    """管理端任务列表响应（包含用户信息）"""
+
+    task_id: str
+    user_id: str
+    username: Optional[str] = None
+    status: str
+    prompt: str
+    aspect_ratio: str
+    resolution: str
+    result: Optional[dict] = None
+    error: Optional[dict] = None
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
+
+
+class AdminTaskListResponse(BaseModel):
+    """管理端任务列表响应"""
+
+    code: int
+    msg: str
+    data: list
+    total: int
+
+
+@router.get("/admin/tasks", response_model=AdminTaskListResponse)
+async def admin_list_tasks(
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    status: Optional[str] = Query(default=None, description="状态筛选"),
+    user_id: Optional[str] = Query(default=None, description="用户ID筛选"),
+    current_user: User = Depends(AuthControl.is_authed),
+):
+    """
+    管理员获取所有图像生成任务列表
+
+    仅超级用户可访问，返回所有用户的任务记录。
+    支持按状态、用户ID筛选，支持分页。
+    """
+    # 检查是否为超级用户
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="仅超级管理员可访问此接口")
+
+    query = ImageTask.filter(is_deleted=False)
+
+    if status:
+        query = query.filter(status=status)
+
+    if user_id:
+        query = query.filter(user_id=user_id)
+
+    total = await query.count()
+    tasks = await query.order_by("-created_at").offset(offset).limit(limit)
+
+    # 构建任务列表，同时获取用户名
+    task_list = []
+    for t in tasks:
+        # 获取用户名
+        username = None
+        if t.user_id:
+            user = await User.get_or_none(id=t.user_id)
+            username = user.username if user else None
+
+        task_list.append(
+            {
+                "task_id": t.id,
+                "user_id": t.user_id,
+                "username": username,
+                "status": t.status,
+                "prompt": t.prompt[:100] + "..." if len(t.prompt) > 100 else t.prompt,
+                "aspect_ratio": t.aspect_ratio,
+                "resolution": t.resolution,
+                "result": t.result_json,
+                "error": {"code": t.error_code, "message": t.error_message} if t.error_code else None,
+                "created_at": t.created_at,
+                "started_at": t.started_at,
+                "finished_at": t.finished_at,
+            }
+        )
+
+    return {
+        "code": 200,
+        "msg": "success",
+        "data": task_list,
+        "total": total,
+    }
+
+
+@router.get("/admin/tasks/{task_id}", response_model=AdminImageTaskResponse)
+async def admin_get_task(
+    task_id: str,
+    current_user: User = Depends(AuthControl.is_authed),
+):
+    """
+    管理员获取单个任务详情
+
+    仅超级用户可访问。
+    """
+    # 检查是否为超级用户
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="仅超级管理员可访问此接口")
+
+    task = await ImageTask.get_or_none(id=task_id, is_deleted=False)
+    if not task:
+        raise HTTPException(status_code=404, detail="任务不存在")
+
+    # 获取用户名
+    username = None
+    if task.user_id:
+        user = await User.get_or_none(id=task.user_id)
+        username = user.username if user else None
+
+    return {
+        "task_id": task.id,
+        "user_id": task.user_id,
+        "username": username,
+        "status": task.status,
+        "prompt": task.prompt,
+        "aspect_ratio": task.aspect_ratio,
+        "resolution": task.resolution,
+        "result": task.result_json,
+        "error": {"code": task.error_code, "message": task.error_message} if task.error_code else None,
+        "created_at": task.created_at,
+        "started_at": task.started_at,
+        "finished_at": task.finished_at,
     }

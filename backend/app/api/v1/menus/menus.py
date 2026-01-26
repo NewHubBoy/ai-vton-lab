@@ -17,13 +17,13 @@ async def list_menu(
     page_size: int = Query(10, description="每页数量"),
 ):
     async def get_menu_with_children(menu_id: int):
-        menu = await menu_controller.model.get(id=menu_id)
+        menu = await menu_controller.model.get(id=menu_id, is_deleted=False)
         menu_dict = await menu.to_dict()
-        child_menus = await menu_controller.model.filter(parent_id=menu_id).order_by("order")
+        child_menus = await menu_controller.model.filter(parent_id=menu_id, is_deleted=False).order_by("order")
         menu_dict["children"] = [await get_menu_with_children(child.id) for child in child_menus]
         return menu_dict
 
-    parent_menus = await menu_controller.model.filter(parent_id=0).order_by("order")
+    parent_menus = await menu_controller.model.filter(parent_id=0, is_deleted=False).order_by("order")
     res_menu = [await get_menu_with_children(menu.id) for menu in parent_menus]
     return SuccessExtra(data=res_menu, total=len(res_menu), page=page, page_size=page_size)
 
@@ -56,7 +56,7 @@ async def update_menu(
 async def delete_menu(
     id: int = Query(..., description="菜单id"),
 ):
-    child_menu_count = await menu_controller.model.filter(parent_id=id).count()
+    child_menu_count = await menu_controller.model.filter(parent_id=id, is_deleted=False).count()
     if child_menu_count > 0:
         return Fail(msg="Cannot delete a menu with child menus")
     await menu_controller.remove(id=id)

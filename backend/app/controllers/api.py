@@ -13,7 +13,7 @@ class ApiController(CRUDBase[Api, ApiCreate, ApiUpdate]):
     async def refresh_api(self):
         from app import app
 
-        # 删除废弃API数据
+        # 删除废弃API数据（硬删除）
         all_api_list = []
         for route in app.routes:
             # 只更新有鉴权的API
@@ -25,7 +25,7 @@ class ApiController(CRUDBase[Api, ApiCreate, ApiUpdate]):
                 delete_api.append((api.method, api.path))
         for item in delete_api:
             method, path = item
-            logger.debug(f"API Deleted {method} {path}")
+            logger.debug(f"API Hard Deleted {method} {path}")
             await Api.filter(method=method, path=path).delete()
 
         for route in app.routes:
@@ -36,10 +36,10 @@ class ApiController(CRUDBase[Api, ApiCreate, ApiUpdate]):
                 tags = list(route.tags)[0]
                 api_obj = await Api.filter(method=method, path=path).first()
                 if api_obj:
-                    await api_obj.update_from_dict(dict(method=method, path=path, summary=summary, tags=tags)).save()
+                    await api_obj.update_from_dict(dict(method=method, path=path, summary=summary, tags=tags, is_deleted=False)).save()
                 else:
                     logger.debug(f"API Created {method} {path}")
-                    await Api.create(**dict(method=method, path=path, summary=summary, tags=tags))
+                    await Api.create(**dict(method=method, path=path, summary=summary, tags=tags, is_deleted=False))
 
 
 api_controller = ApiController()

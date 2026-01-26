@@ -10,7 +10,7 @@ class RoleController(CRUDBase[Role, RoleCreate, RoleUpdate]):
         super().__init__(model=Role)
 
     async def is_exist(self, name: str) -> bool:
-        return await self.model.filter(name=name).exists()
+        return await self.model.filter(name=name, is_deleted=False).exists()
 
     async def update_roles(self, role: Role, menu_ids: List[int], api_infos: List[dict]) -> None:
         await role.menus.clear()

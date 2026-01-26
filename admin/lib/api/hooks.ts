@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from './query-keys'
-import { baseApi, userApi, roleApi, menuApi, apiManagementApi, deptApi, auditLogApi, promptConfigApi } from './index'
+import { baseApi, userApi, roleApi, menuApi, apiManagementApi, deptApi, auditLogApi, promptConfigApi, imageTaskApi } from './index'
 import { usePathname } from 'next/navigation'
 
 // ============ Base Hooks ============
@@ -380,5 +380,22 @@ export function useUpdatePromptConfigOption() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['promptConfigOptions', variables.group_id] })
     },
+  })
+}
+
+// ============ Image Task Hooks (Admin) ============
+
+export function useImageTasks(params?: Parameters<typeof imageTaskApi.getList>[0]) {
+  return useQuery({
+    queryKey: queryKeys.imageTasks(params as object),
+    queryFn: () => imageTaskApi.getList(params),
+  })
+}
+
+export function useImageTaskDetail(taskId: string) {
+  return useQuery({
+    queryKey: queryKeys.imageTaskDetail(taskId),
+    queryFn: () => imageTaskApi.getDetail({ task_id: taskId }),
+    enabled: !!taskId,
   })
 }

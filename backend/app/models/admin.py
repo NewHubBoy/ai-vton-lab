@@ -15,6 +15,7 @@ class User(BaseModel, TimestampMixin):
     is_active = fields.BooleanField(default=True, description="是否激活", index=True)
     is_superuser = fields.BooleanField(default=False, description="是否为超级管理员", index=True)
     last_login = fields.DatetimeField(null=True, description="最后登录时间", index=True)
+    is_deleted = fields.BooleanField(default=False, description="软删除标记", index=True)
     roles = fields.ManyToManyField("models.Role", related_name="user_roles")
     dept_id = fields.IntField(null=True, description="部门ID", index=True)
 
@@ -25,6 +26,7 @@ class User(BaseModel, TimestampMixin):
 class Role(BaseModel, TimestampMixin):
     name = fields.CharField(max_length=20, unique=True, description="角色名称", index=True)
     desc = fields.CharField(max_length=500, null=True, description="角色描述")
+    is_deleted = fields.BooleanField(default=False, description="软删除标记", index=True)
     menus = fields.ManyToManyField("models.Menu", related_name="role_menus")
     apis = fields.ManyToManyField("models.Api", related_name="role_apis")
 
@@ -37,6 +39,7 @@ class Api(BaseModel, TimestampMixin):
     method = fields.CharEnumField(MethodType, description="请求方法", index=True)
     summary = fields.CharField(max_length=500, description="请求简介", index=True)
     tags = fields.CharField(max_length=100, description="API标签", index=True)
+    is_deleted = fields.BooleanField(default=False, description="软删除标记", index=True)
 
     class Meta:
         table = "api"
@@ -54,6 +57,7 @@ class Menu(BaseModel, TimestampMixin):
     component = fields.CharField(max_length=100, description="组件")
     keepalive = fields.BooleanField(default=True, description="存活")
     redirect = fields.CharField(max_length=100, null=True, description="重定向")
+    is_deleted = fields.BooleanField(default=False, description="软删除标记", index=True)
 
     class Meta:
         table = "menu"

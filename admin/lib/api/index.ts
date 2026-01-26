@@ -360,3 +360,47 @@ export const promptConfigApi = {
   updateOption: (data: Partial<PromptConfigOption> & { id: number }) =>
     apiClient.put<PromptConfigOption>(`/prompt-config/options/${data.id}`, data),
 }
+
+// ============ Image Task APIs (Admin) ============
+
+export interface ImageTask {
+  task_id: string
+  user_id: string
+  username?: string
+  status: 'queued' | 'running' | 'succeeded' | 'failed'
+  prompt: string
+  aspect_ratio: string
+  resolution: string
+  result?: {
+    images?: string[]
+  }
+  error?: {
+    code: string
+    message: string
+  }
+  created_at: string
+  started_at?: string
+  finished_at?: string
+}
+
+export interface ImageTaskListParams {
+  limit?: number
+  offset?: number
+  status?: string
+  user_id?: string
+}
+
+export interface ImageTaskListResponse {
+  tasks: ImageTask[]
+  total: number
+}
+
+export const imageTaskApi = {
+  // 获取任务列表（管理员）
+  getList: (params?: ImageTaskListParams) =>
+    apiClient.getPaginated<ImageTaskListResponse>('/images/admin/tasks', params),
+
+  // 获取任务详情（管理员）
+  getDetail: (params: { task_id: string }) =>
+    apiClient.get<ImageTask>('/images/admin/tasks', params),
+}

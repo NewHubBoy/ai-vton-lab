@@ -219,15 +219,15 @@ async def init_roles():
         )
 
         # 分配所有API给管理员角色
-        all_apis = await Api.all()
+        all_apis = await Api.filter(is_deleted=False).all()
         await admin_role.apis.add(*all_apis)
         # 分配所有菜单给管理员和普通用户
-        all_menus = await Menu.all()
+        all_menus = await Menu.filter(is_deleted=False).all()
         await admin_role.menus.add(*all_menus)
         await user_role.menus.add(*all_menus)
 
         # 为普通用户分配基本API
-        basic_apis = await Api.filter(Q(method__in=["GET"]) | Q(tags="基础模块"))
+        basic_apis = await Api.filter(is_deleted=False, method__in=["GET"]) | Q(is_deleted=False, tags="基础模块")
         await user_role.apis.add(*basic_apis)
 
 async def init_prompt_config():

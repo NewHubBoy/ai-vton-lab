@@ -39,4 +39,7 @@ export default {
   deleteDept: (params = {}) => request.delete('/dept/delete', { params }),
   // auditlog
   getAuditLogList: (params = {}) => request.get('/auditlog/list', { params }),
+  // image tasks (admin)
+  getAdminImageTaskList: (params = {}) => request.get('/images/admin/tasks', { params }),
+  getAdminImageTaskDetail: (params = {}) => request.get(`/images/admin/tasks/${params.task_id}`, { params }),
 }

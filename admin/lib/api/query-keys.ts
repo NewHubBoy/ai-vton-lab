@@ -34,4 +34,8 @@ export const queryKeys = {
   // Prompt Config
   promptConfigGroups: (params?: object) => ['promptConfigGroups', params] as const,
   promptConfigOptions: (groupId: number, params?: object) => ['promptConfigOptions', groupId, params] as const,
+
+  // Image Task (Admin)
+  imageTasks: (params?: object) => ['imageTasks', params] as const,
+  imageTaskDetail: (taskId: string) => ['imageTaskDetail', taskId] as const,
 }

@@ -17,10 +17,10 @@ class UserController(CRUDBase[User, UserCreate, UserUpdate]):
         super().__init__(model=User)
 
     async def get_by_email(self, email: str) -> Optional[User]:
-        return await self.model.filter(email=email).first()
+        return await self.model.filter(email=email, is_deleted=False).first()
 
     async def get_by_username(self, username: str) -> Optional[User]:
-        return await self.model.filter(username=username).first()
+        return await self.model.filter(username=username, is_deleted=False).first()
 
     async def create_user(self, obj_in: UserCreate) -> User:
         obj_in.password = get_password_hash(password=obj_in.password)

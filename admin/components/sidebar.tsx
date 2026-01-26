@@ -13,6 +13,7 @@ import {
   LogOut,
   ChevronDown,
   ChevronLeft,
+  ImageIcon,
 } from 'lucide-react'
 
 interface NavItem {
@@ -32,6 +33,11 @@ const mainNavItems: NavItem[] = [
     title: '用户管理',
     href: '/system/users',
     icon: <Users className="h-4 w-4" />,
+  },
+  {
+    title: '生成记录',
+    href: '/business/records',
+    icon: <ImageIcon className="h-4 w-4" />,
   },
 ]
 

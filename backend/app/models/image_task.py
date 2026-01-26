@@ -38,6 +38,9 @@ class ImageTask(BaseModel, TimestampMixin):
     # 结果
     result_json = fields.JSONField(null=True, description="生成结果")
 
+    # 软删除
+    is_deleted = fields.BooleanField(default=False, description="软删除标记", index=True)
+
     # 时间戳
     started_at = fields.DatetimeField(null=True, description="开始时间")
     finished_at = fields.DatetimeField(null=True, description="完成时间")

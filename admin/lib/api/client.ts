@@ -210,12 +210,17 @@ async function fetchApiPaginated<T>(endpoint: string, options: RequestOptions = 
       signal: controller.signal,
     })
 
+
+
     clearTimeout(timeoutId)
 
     const result = await responseInterceptor<T>(response) as PaginatedApiResponse<T>
+
     return result
   } catch (error) {
     clearTimeout(timeoutId)
+
+
 
     if (error instanceof ApiError) {
       // 处理 401 未授权
