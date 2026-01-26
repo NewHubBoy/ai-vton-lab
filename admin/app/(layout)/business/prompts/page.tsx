@@ -368,7 +368,7 @@ function OptionsSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[800px] sm:w-[540px] overflow-y-auto">
+      <SheetContent className="w-[800px] sm:w-[540px] overflow-y-auto px-4">
         <SheetHeader>
           <SheetTitle>{group.group_name} - 选项管理</SheetTitle>
           <SheetDescription>管理该组下的所有选项</SheetDescription>
@@ -398,7 +398,7 @@ function OptionsSheet({
                 ) : options.length === 0 ? (
                   <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">暂无选项</TableCell></TableRow>
                 ) : (
-                  options.map(opt => (
+                  options.map((opt: PromptConfigOption) => (
                     <TableRow key={opt.id}>
                       <TableCell>
                         <div className="font-medium">{opt.option_label}</div>
