@@ -51,7 +51,7 @@ export default function RegisterPage() {
           <p className="mt-2 text-sm/6 text-gray-500 dark:text-gray-400">
             已有账号?{' '}
             <Link
-              href="/"
+              href="/login"
               className="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
             >
               立即登录
@@ -241,7 +241,7 @@ export default function RegisterPage() {
           </div>
 
           <Link
-            href="/"
+            href="/login"
             className="group mt-10 inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-base font-semibold text-indigo-600 shadow-lg transition-all hover:bg-gray-50 hover:shadow-xl hover:scale-105"
           >
             立即登录
