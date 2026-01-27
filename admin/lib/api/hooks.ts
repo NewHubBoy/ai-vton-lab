@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from './query-keys'
-import { baseApi, userApi, roleApi, menuApi, apiManagementApi, deptApi, auditLogApi, promptConfigApi, imageTaskApi, modelPhotoApi } from './index'
+import { baseApi, userApi, roleApi, menuApi, apiManagementApi, deptApi, auditLogApi, promptConfigApi, imageTaskApi, modelPhotoApi, rechargeApi } from './index'
 import { usePathname } from 'next/navigation'
 
 // ============ Base Hooks ============
@@ -431,5 +431,125 @@ export function useModelPhotoTryonDetail(id: number) {
     queryKey: queryKeys.modelPhotoTryonDetail(id),
     queryFn: () => modelPhotoApi.getTryonDetail({ id }),
     enabled: !!id,
+  })
+}
+
+// ============ Recharge Hooks ============
+
+export function useUserCredits() {
+  return useQuery({
+    queryKey: ['userCredits'],
+    queryFn: () => rechargeApi.getCredits(),
+    staleTime: 60 * 1000, // 1 minute
+  })
+}
+
+export function useRechargeRecords(params?: { limit?: number; offset?: number; status?: string }) {
+  return useQuery({
+    queryKey: ['rechargeRecords', params],
+    queryFn: () => rechargeApi.getRecords(params),
+  })
+}
+
+export function useRechargeConfigs() {
+  return useQuery({
+    queryKey: ['rechargeConfigs'],
+    queryFn: () => rechargeApi.getConfigs(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+export function useCreateRechargeOrder() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: rechargeApi.createOrder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userCredits'] })
+      queryClient.invalidateQueries({ queryKey: ['rechargeRecords'] })
+    },
+  })
+}
+
+export function useRedeemCardCode() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: rechargeApi.redeemCard,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userCredits'] })
+      queryClient.invalidateQueries({ queryKey: ['rechargeRecords'] })
+    },
+  })
+}
+
+// ============ Admin Recharge Hooks ============
+
+export function useAdminRechargeRecords(params?: { limit?: number; offset?: number; user_id?: number; status?: string }) {
+  return useQuery({
+    queryKey: ['adminRechargeRecords', params],
+    queryFn: () => rechargeApi.adminGetRecords(params),
+  })
+}
+
+export function useAdminCardCodes(params?: { limit?: number; offset?: number; batch_no?: string; is_used?: boolean }) {
+  return useQuery({
+    queryKey: ['adminCardCodes', params],
+    queryFn: () => rechargeApi.adminListCards(params),
+  })
+}
+
+export function useAdminRechargeConfigs() {
+  return useQuery({
+    queryKey: ['adminRechargeConfigs'],
+    queryFn: () => rechargeApi.adminGetConfigs(),
+  })
+}
+
+export function useAdminGenerateCardCodes() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: rechargeApi.adminGenerateCards,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminCardCodes'] })
+    },
+  })
+}
+
+export function useAdminCreateRechargeConfig() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: rechargeApi.adminCreateConfig,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminRechargeConfigs'] })
+    },
+  })
+}
+
+export function useAdminUpdateRechargeConfig() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: rechargeApi.adminUpdateConfig,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminRechargeConfigs'] })
+    },
+  })
+}
+
+export function useAdminDeleteRechargeConfig() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => rechargeApi.adminDeleteConfig(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminRechargeConfigs'] })
+    },
+  })
+}
+
+export function useAdminAddUserCredits() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: rechargeApi.adminAddCredits,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+    },
   })
 }

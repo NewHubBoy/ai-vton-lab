@@ -17,12 +17,24 @@ interface UserInfo {
   is_active: boolean
 }
 
-interface MenuItem {
+// 菜单类型枚举（对应后端 MenuType）
+export type MenuType = "catalog" | "menu"
+
+// 菜单项类型（对应后端 BaseMenu）
+export interface MenuItem {
   id: number
-  title: string
-  path?: string
-  icon?: string
-  children?: MenuItem[]
+  name: string
+  path: string
+  remark?: Record<string, unknown> | null
+  menu_type?: MenuType | null
+  icon?: string | null
+  order: number
+  parent_id: number
+  is_hidden: boolean
+  component: string
+  keepalive: boolean
+  redirect?: string | null
+  children?: MenuItem[] | null
 }
 
 interface AuthContextType {

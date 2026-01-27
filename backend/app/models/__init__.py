@@ -3,3 +3,4 @@ from .admin import *
 from .image_task import *
 from .model_photo import *
 from .prompt_config import *
+from .recharge import *

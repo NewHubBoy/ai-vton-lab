@@ -98,6 +98,15 @@ class Settings(BaseSettings):
     TORTOISE_ORM: dict = {}
     DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
 
+    # Stripe 配置
+    STRIPE_API_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_SUCCESS_URL: str = "http://localhost:3000/payment/success"
+    STRIPE_CANCEL_URL: str = "http://localhost:3000/payment/cancel"
+
+    # 积分配置
+    DEFAULT_CREDIT_PER_YUAN: int = 100  # 1元 = 100积分
+
 
 settings = Settings()
 TORTOISE_ORM = settings.get_tortoise_orm()

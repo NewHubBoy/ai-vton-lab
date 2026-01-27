@@ -468,3 +468,123 @@ export const modelPhotoApi = {
   getTryonDetail: (params: { id: number }) =>
     apiClient.get<ModelPhoto>('/model-photo/tryon', params),
 }
+
+// ============ Recharge APIs ============
+
+export interface UserCredits {
+  credit_balance: number
+  total_recharged: number
+}
+
+export interface RechargeRecord {
+  id: number
+  order_no: string
+  user_id: number
+  amount: number
+  currency: string
+  credits: number
+  payment_method: string
+  payment_status: string
+  status_text: string
+  payment_method_text: string
+  created_at: string
+  finished_at?: string
+}
+
+export interface RechargeConfig {
+  id: number
+  name: string
+  amount: number
+  credits: number
+  bonus_ratio: number
+  bonus_credits: number
+  description?: string
+  is_active: boolean
+  sort_order: number
+}
+
+export interface CardCode {
+  code: string
+  amount: number
+  credits: number
+  is_used: boolean
+  used_at?: string
+  expired_at?: string
+}
+
+export const rechargeApi = {
+  // 获取用户积分
+  getCredits: () =>
+    apiClient.get<UserCredits>('/recharge/credits'),
+
+  // 获取充值记录
+  getRecords: (params?: { limit?: number; offset?: number; status?: string }) =>
+    apiClient.get<{ data: RechargeRecord[]; total: number; limit: number; offset: number }>(
+      '/recharge/records',
+      params
+    ),
+
+  // 获取充值配置
+  getConfigs: () =>
+    apiClient.get<RechargeConfig[]>('/recharge/configs'),
+
+  // 创建充值订单
+  createOrder: (data: { amount: number; payment_method: string; config_id?: number }) =>
+    apiClient.post<{ order_no: string; session_id?: string; checkout_url?: string }>(
+      '/recharge/create',
+      data
+    ),
+
+  // 兑换卡密
+  redeemCard: (data: { code: string }) =>
+    apiClient.post<{ success: boolean; message: string; data?: Record<string, unknown> }>(
+      '/recharge/card/redeem',
+      data
+    ),
+
+  // ============ Admin APIs ============
+
+  // 管理端获取所有充值记录
+  adminGetRecords: (params?: { limit?: number; offset?: number; user_id?: number; status?: string }) =>
+    apiClient.get<{ data: RechargeRecord[]; total: number; limit: number; offset: number }>(
+      '/recharge/admin/records',
+      params
+    ),
+
+  // 管理端生成卡密
+  adminGenerateCards: (data: { amount: number; count: number; expired_at?: string }) =>
+    apiClient.post<{ batch_no: string; codes: CardCode[] }>(
+      '/recharge/admin/card/generate',
+      data
+    ),
+
+  // 管理端查询卡密列表
+  adminListCards: (params?: { limit?: number; offset?: number; batch_no?: string; is_used?: boolean }) =>
+    apiClient.get<{ data: CardCode[]; total: number }>(
+      '/recharge/admin/card/list',
+      params
+    ),
+
+  // 管理端获取充值配置
+  adminGetConfigs: () =>
+    apiClient.get<RechargeConfig[]>('/recharge/admin/configs'),
+
+  // 管理端创建充值配置
+  adminCreateConfig: (data: Partial<RechargeConfig>) =>
+    apiClient.post<RechargeConfig>('/recharge/admin/config', data),
+
+  // 管理端更新充值配置
+  adminUpdateConfig: (data: Partial<RechargeConfig> & { id: number }) =>
+    apiClient.put<RechargeConfig>(`/recharge/admin/config/${data.id}`, data),
+
+  // 管理端删除充值配置
+  adminDeleteConfig: (id: number) =>
+    apiClient.delete<{ success: boolean }>(`/recharge/admin/config/${id}`),
+
+  // 管理端手动添加用户积分
+  adminAddCredits: (data: { user_id: number; credits: number; remark?: string }) =>
+    apiClient.post<{ success: boolean; new_balance: number }>(
+      '/recharge/admin/user/credits/add',
+      data
+    ),
+}

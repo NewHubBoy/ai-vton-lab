@@ -19,6 +19,7 @@ import {
     SidebarMenuSubButton,
     SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
+import { type MenuType } from "./auth-provider"
 
 export function NavMain({
     items,
@@ -28,7 +29,7 @@ export function NavMain({
         url: string
         icon: LucideIcon
         isActive?: boolean
-        menu_type?: string
+        menu_type?: MenuType | null
         items?: {
             title: string
             url: string

@@ -34,28 +34,6 @@ async def get_model_photos(page: int = 1, page_size: int = 10, status: str = Non
     )
 
 
-@router.get("/{id}", summary="获取模特生成记录详情")
-async def get_model_photo(id: int):
-    user_id = CTX_USER_ID.get()
-    obj = await ModelPhoto.get_or_none(id=id, user_id=user_id, is_deleted=False)
-    if not obj:
-        raise HTTPException(status_code=404, detail="记录不存在")
-    return Success(data=ModelPhotoResponse.model_validate(obj))
-
-
-@router.delete("/{id}", summary="删除模特生成记录")
-async def delete_model_photo(id: int):
-    user_id = CTX_USER_ID.get()
-    obj = await ModelPhoto.get_or_none(id=id, user_id=user_id)
-    if not obj:
-        raise HTTPException(status_code=404, detail="记录不存在")
-
-    obj.is_deleted = True
-    obj.deleted_at = datetime.now()
-    await obj.save()
-    return Success(msg="删除成功")
-
-
 # ============ 管理端接口 ============
 
 
@@ -127,3 +105,28 @@ async def get_tryon_record(id: int):
     result["username"] = user.username if user else None
 
     return Success(data=result)
+
+
+# ============ 通用详情/删除（带路径参数，必须放最后） ============
+
+
+@router.get("/{id}", summary="获取模特生成记录详情")
+async def get_model_photo(id: int):
+    user_id = CTX_USER_ID.get()
+    obj = await ModelPhoto.get_or_none(id=id, user_id=user_id, is_deleted=False)
+    if not obj:
+        raise HTTPException(status_code=404, detail="记录不存在")
+    return Success(data=ModelPhotoResponse.model_validate(obj))
+
+
+@router.delete("/{id}", summary="删除模特生成记录")
+async def delete_model_photo(id: int):
+    user_id = CTX_USER_ID.get()
+    obj = await ModelPhoto.get_or_none(id=id, user_id=user_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="记录不存在")
+
+    obj.is_deleted = True
+    obj.deleted_at = datetime.now()
+    await obj.save()
+    return Success(msg="删除成功")

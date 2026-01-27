@@ -33,7 +33,7 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { NavUser } from "@/components/nav-user"
-import { useAuth } from "./auth-provider"
+import { useAuth, type MenuItem, type MenuType } from "./auth-provider"
 
 // Icon 映射表
 const iconMap: Record<string, LucideIcon> = {
@@ -58,7 +58,7 @@ const iconMap: Record<string, LucideIcon> = {
     "model-photos": Album,
     'prompts': Siren,
     'records': TableOfContents,
-    'topup': CircleDollarSign,
+    'recharge': CircleDollarSign,
     'tryon-records': Shirt
 }
 
@@ -67,7 +67,7 @@ interface NavSubItem {
     title: string
     url: string
     icon?: LucideIcon
-    menu_type?: string
+    menu_type?: MenuType | null
     sort?: number
 }
 
@@ -78,16 +78,16 @@ interface NavMainItem {
     icon: LucideIcon
     isActive?: boolean
     sort: number
-    menu_type?: string
+    menu_type?: MenuType | null
     items?: NavSubItem[]
 }
 
 // 转换函数：将 menus 转换成 navMain 格式 都通过 sort 排序
-function transformMenusToNavMain(menus: any[]): NavMainItem[] {
+function transformMenusToNavMain(menus: MenuItem[]): NavMainItem[] {
     if (!menus || menus.length === 0) return []
 
     const navItems = menus
-        .filter(menu => !menu.is_hidden && menu.menu_type !== 'button')
+        .filter(menu => !menu.is_hidden)
         .map((menu) => {
             // 获取 icon：从 path 去掉 /，取最后一段作为 icon key
             // 例如 /system/users -> users
@@ -104,7 +104,7 @@ function transformMenusToNavMain(menus: any[]): NavMainItem[] {
                     .filter((child: any) => !child.is_hidden && child.menu_type !== 'button')
                     .map((child: any) => {
                         // 拼接 URL：父级 path + 子菜单 path
-                        let childUrl = parentPath.endsWith('/') ? parentPath + (child.path || '') : parentPath + "/" + (child.path || '')
+                        const childUrl = parentPath.endsWith('/') ? parentPath + (child.path || '') : parentPath + "/" + (child.path || '')
 
                         // 子菜单 icon
                         const childIconKey = child.path ? child.path.replace(/^\//, '').split('/').pop() || '' : ''
