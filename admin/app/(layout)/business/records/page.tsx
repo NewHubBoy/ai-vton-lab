@@ -179,7 +179,7 @@ export default function ImageTasksPage() {
                           <PopoverTrigger asChild>
                             <Button variant="ghost" size="icon">
                               <img
-                                src={task.result.images[0]}
+                                src={task.result.images[0]?.oss_url}
                                 alt="result"
                                 className="h-10 w-10 object-cover rounded"
                               />
@@ -189,10 +189,10 @@ export default function ImageTasksPage() {
                             <div className="space-y-2">
                               <h4 className="font-medium">生成结果</h4>
                               <div className="grid grid-cols-2 gap-2">
-                                {task.result.images.map((img: string, idx: number) => (
+                                {task.result.images.map((img: { oss_url: string }, idx: number) => (
                                   <img
                                     key={idx}
-                                    src={img}
+                                    src={img.oss_url}
                                     alt={`result-${idx}`}
                                     className="w-full rounded border"
                                   />

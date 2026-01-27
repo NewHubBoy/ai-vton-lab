@@ -4,8 +4,9 @@
 负责处理图像生成任务：
 1. 轮询数据库获取 queued 状态的任务
 2. 调用 Google Gen API 生成图像
-3. 更新任务状态
-4. 通过 WebSocket 推送结果
+3. 上传到 OSS 并保存记录
+4. 更新任务状态
+5. 通过 WebSocket 推送结果
 
 可扩展升级：
 - Celery: 将处理逻辑改为 Celery Task
@@ -13,15 +14,18 @@
 - 重试机制: 实现指数退避重试
 """
 import asyncio
-import threading
-import time
+import os
+import uuid
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
 from app.models.image_task import ImageTask
+from app.models.model_photo import ModelImage
 from app.core.ws_manager import ws_manager
 from app.core.image_client import generate_image
 from app.settings.config import settings
+from app.utils.oss_utils import get_oss_uploader
 
 
 # Worker 配置
@@ -30,7 +34,96 @@ CONFIG = {
     "batch_size": 10,  # 每次处理的任务数
     "retry_times": 3,  # 重试次数
     "retry_delay": 5,  # 重试间隔（秒）
+    "oss_folder": "generated",  # OSS 文件夹
 }
+
+
+async def upload_image_to_oss(local_path: str, user_id: int, model_photo_id: Optional[int] = None, create_model_image: bool = True) -> Optional[dict]:
+    """上传图片到 OSS 并创建 ModelImage 记录
+
+    Args:
+        local_path: 本地图片路径
+        user_id: 用户ID
+        model_photo_id: 关联的 ModelPhoto ID
+
+    Returns:
+        包含上传信息的字典，或失败时返回 None
+    """
+    try:
+        # 读取文件内容
+        with open(local_path, "rb") as f:
+            content = f.read()
+
+        # 获取 OSS 上传器
+        uploader = get_oss_uploader()
+
+        # 生成 OSS 对象名
+        filename = Path(local_path).name
+        ext = Path(local_path).suffix
+        object_name = uploader.generate_object_name(
+            filename,
+            folder=CONFIG["oss_folder"],
+            use_date_folder=True,
+        )
+
+        # 上传到 OSS
+        success, result = uploader.upload_file(content, object_name)
+        print(f"[ImageWorker] OSS upload result: success={success}, result={result}, object_name={object_name}")
+
+        if not success:
+            print(f"[ImageWorker] OSS upload failed: {result}")
+            return None
+
+        # 获取图片信息
+        try:
+            from PIL import Image
+            with Image.open(local_path) as img:
+                width, height = img.size
+                file_size = len(content)
+            print(f"[ImageWorker] PIL open success: {local_path}, size={width}x{height}")
+        except Exception as img_error:
+            print(f"[ImageWorker] PIL open failed: {img_error}, path={local_path}")
+            return None
+
+        # 只有在需要创建 ModelImage 记录时才创建
+        if create_model_image and model_photo_id:
+            model_image = await ModelImage.create(
+                model_photo_id=model_photo_id,
+                user_id=user_id,
+                filename=filename,
+                width=width,
+                height=height,
+                size=file_size,
+                content_type=f"image/{ext[1:].lower()}" if ext else "image/png",
+                extension=ext.lower(),
+                oss_object_name=object_name,
+                oss_url=result,
+                oss_folder=CONFIG["oss_folder"],
+                image_type="result",
+                is_primary=False,
+                is_uploaded=True,
+                uploaded_at=datetime.utcnow(),
+            )
+            print(f"[ImageWorker] Image uploaded to OSS: {result}")
+            return {
+                "model_image_id": model_image.id,
+                "oss_url": result,
+                "width": width,
+                "height": height,
+            }
+        else:
+            # 直接返回 OSS URL，不创建 ModelImage 记录
+            print(f"[ImageWorker] Image uploaded to OSS (no ModelImage): {result}")
+            return {
+                "model_image_id": None,
+                "oss_url": result,
+                "width": width,
+                "height": height,
+            }
+
+    except Exception as e:
+        print(f"[ImageWorker] Error uploading image: {e}")
+        return None
 
 
 async def process_single_task(task: ImageTask) -> bool:
@@ -68,13 +161,25 @@ async def process_single_task(task: ImageTask) -> bool:
             )
 
             if result["status"] == "success":
+                # 上传生成的图片到 OSS
+                uploaded_images = []
+                for local_path in result.get("generated_images", []):
+                    upload_result = await upload_image_to_oss(local_path, task.user_id, None)
+                    if upload_result:
+                        uploaded_images.append(upload_result)
+                    else:
+                        # 上传失败，使用本地路径
+                        uploaded_images.append({
+                            "local_path": local_path,
+                            "oss_url": None,
+                            "width": 1024,
+                            "height": 1024,
+                        })
+
                 # 成功：更新结果
                 task.status = "succeeded"
                 task.result_json = {
-                    "images": [
-                        {"url": url, "width": 1024, "height": 1024}
-                        for url in result.get("generated_images", [])
-                    ]
+                    "images": uploaded_images
                 }
                 task.finished_at = datetime.utcnow()
                 await task.save()

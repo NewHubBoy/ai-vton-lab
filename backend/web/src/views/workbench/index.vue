@@ -34,7 +34,7 @@
             :key="i"
             class="mb-10 mt-10 w-300 cursor-pointer"
             hover:card-shadow
-            title="Vue FastAPI Admin"
+            title="AI VTON Lab"
             size="small"
           >
             <p op-60>{{ dummyText }}</p>
@@ -49,7 +49,7 @@
 import { useUserStore } from '@/store'
 import { useI18n } from 'vue-i18n'
 
-const dummyText = '一个基于 Vue3.0、FastAPI、Naive UI 的轻量级后台管理模板'
+const dummyText = 'AI VTON Lab - 基于 Vue3.0、FastAPI、Naive UI 的轻量级后台管理模板'
 const { t } = useI18n({ useScope: 'global' })
 
 const statisticData = computed(() => [

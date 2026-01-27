@@ -1,14 +1,14 @@
 <p align="center">
-  <a href="https://github.com/mizhexiaoxiao/vue-fastapi-admin">
-    <img alt="Vue FastAPI Admin Logo" width="200" src="https://github.com/mizhexiaoxiao/vue-fastapi-admin/blob/main/deploy/sample-picture/logo.svg">
+  <a href="https://github.com/dengyafei/ai-vton-lab">
+    <img alt="AI VTON Lab Logo" width="200" src="https://github.com/mizhexiaoxiao/vue-fastapi-admin/blob/main/deploy/sample-picture/logo.svg">
   </a>
 </p>
 
-<h1 align="center">vue-fastapi-admin</h1>
+<h1 align="center">AI VTON Lab</h1>
 
 English | [简体中文](./README.md)
 
-vue-fastapi-admin is a modern front-end and back-end separation development platform that combines FastAPI, Vue3, and Naive UI. It incorporates RBAC (Role-Based Access Control) management, dynamic routing, and JWT (JSON Web Token) authentication, making it ideal for rapid development of small to medium-sized applications and also serves as a valuable learning resource.
+AI VTON Lab is an AI Virtual Try-On and Image Generation platform built with FastAPI, Vue3, and Naive UI. It incorporates RBAC (Role-Based Access Control) management, dynamic routing, and JWT (JSON Web Token) authentication, making it ideal for rapid development of small to medium-sized applications and also serves as a valuable learning resource.
 
 ### Features
 - **Popular Tech Stack**: The backend is developed with the high-performance asynchronous framework FastAPI using Python 3.11, while the front-end is powered by cutting-edge technologies such as Vue3 and Vite, complemented by the efficient package manager, pnpm.

@@ -1,14 +1,14 @@
 <p align="center">
-  <a href="https://github.com/mizhexiaoxiao/vue-fastapi-admin">
-    <img alt="Vue FastAPI Admin Logo" width="200" src="https://github.com/mizhexiaoxiao/vue-fastapi-admin/blob/main/deploy/sample-picture/logo.svg">
+  <a href="https://github.com/dengyafei/ai-vton-lab">
+    <img alt="AI VTON Lab Logo" width="200" src="https://github.com/mizhexiaoxiao/vue-fastapi-admin/blob/main/deploy/sample-picture/logo.svg">
   </a>
 </p>
 
-<h1 align="center">vue-fastapi-admin</h1>
+<h1 align="center">AI VTON Lab</h1>
 
 [English](./README-en.md) | 简体中文
 
-基于 FastAPI + Vue3 + Naive UI 的现代化前后端分离开发平台，融合了 RBAC 权限管理、动态路由和 JWT 鉴权，助力中小型应用快速搭建，也可用于学习参考。
+基于 FastAPI + Vue3 + Naive UI 的 AI 虚拟试穿与图像生成平台，融合了 RBAC 权限管理、动态路由和 JWT 鉴权，助力中小型应用快速搭建，也可用于学习参考。
 
 ### 特性
 
