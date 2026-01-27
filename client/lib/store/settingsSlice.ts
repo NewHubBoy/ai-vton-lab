@@ -2,6 +2,9 @@
 
 import { StateCreator } from 'zustand';
 
+// 动态配置选项的选中值类型
+export type DynamicConfigValues = Record<string, string | string[] | boolean>;
+
 export interface SettingsSlice {
   resolution: '1K' | '2K' | '4K';
   setResolution: (resolution: '1K' | '2K' | '4K') => void;
@@ -17,6 +20,12 @@ export interface SettingsSlice {
 
   advancedSettingsOpen: boolean;
   setAdvancedSettingsOpen: (open: boolean) => void;
+
+  // 动态配置选项
+  dynamicConfigs: DynamicConfigValues;
+  setDynamicConfig: (key: string, value: string | string[] | boolean) => void;
+  setDynamicConfigs: (configs: DynamicConfigValues) => void;
+  clearDynamicConfigs: () => void;
 }
 
 export const createSettingsSlice: StateCreator<SettingsSlice> = (set) => ({
@@ -34,4 +43,13 @@ export const createSettingsSlice: StateCreator<SettingsSlice> = (set) => ({
 
   advancedSettingsOpen: true,
   setAdvancedSettingsOpen: (open) => set({ advancedSettingsOpen: open }),
+
+  // 动态配置选项
+  dynamicConfigs: {},
+  setDynamicConfig: (key, value) =>
+    set((state) => ({
+      dynamicConfigs: { ...state.dynamicConfigs, [key]: value },
+    })),
+  setDynamicConfigs: (configs) => set({ dynamicConfigs: configs }),
+  clearDynamicConfigs: () => set({ dynamicConfigs: {} }),
 });

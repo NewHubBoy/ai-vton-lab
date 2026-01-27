@@ -1,31 +1,354 @@
 'use client';
 
+import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings2, ChevronDown } from 'lucide-react';
+import { Settings2, ChevronDown, Loader2 } from 'lucide-react';
 import { useTryOnStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
+import { usePromptConfig } from '@/hooks/usePromptConfig';
+import { PromptConfigGroupWithOptions, PromptConfigOption } from '@/lib/api/prompt-config';
 
-const resolutions = ['1K', '2K', '4K'] as const;
-const aspectRatios = ['1:1', '4:5', '9:16', '16:9'] as const;
-const fitOptions = [
-  { value: 'loose', label: 'Loose' },
-  { value: 'fit', label: 'Regular' },
-  { value: 'tight', label: 'Slim' },
-] as const;
+// 渲染单选按钮组
+function RadioGroup({
+  group,
+  selectedValue,
+  onChange,
+}: {
+  group: PromptConfigGroupWithOptions;
+  selectedValue: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">
+        {group.group_name}
+      </label>
+      <div className="flex gap-1.5 flex-wrap">
+        {group.options.map((option) => (
+          <button
+            key={option.option_key}
+            onClick={() => onChange(option.option_key)}
+            className={cn(
+              'flex-1 min-w-[60px] py-1.5 px-2 text-xs font-medium rounded-md transition-all',
+              selectedValue === option.option_key
+                ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900'
+                : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700'
+            )}
+          >
+            {option.option_label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 渲染选择框
+function SelectGroup({
+  group,
+  selectedValue,
+  onChange,
+}: {
+  group: PromptConfigGroupWithOptions;
+  selectedValue: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">
+        {group.group_name}
+      </label>
+      <select
+        value={selectedValue}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full py-1.5 px-2 text-xs font-medium rounded-md bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700"
+      >
+        {group.options.map((option) => (
+          <option key={option.option_key} value={option.option_key}>
+            {option.option_label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+// 渲染开关
+function ToggleGroup({
+  group,
+  selectedValue,
+  onChange,
+}: {
+  group: PromptConfigGroupWithOptions;
+  selectedValue: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between pt-1">
+      <span className="text-xs text-zinc-600 dark:text-zinc-400">
+        {group.group_name}
+      </span>
+      <button
+        onClick={() => onChange(!selectedValue)}
+        className={cn(
+          'relative w-8 h-4.5 rounded-full transition-colors',
+          selectedValue ? 'bg-zinc-900 dark:bg-white' : 'bg-zinc-300 dark:bg-zinc-600'
+        )}
+      >
+        <motion.div
+          animate={{ x: selectedValue ? 16 : 2 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+          className="absolute top-0.5 left-0.5 w-3.5 h-3.5 bg-white dark:bg-zinc-900 rounded-full shadow-sm"
+        />
+      </button>
+    </div>
+  );
+}
+
+// 渲染复选框组（多选）- 带勾选动画的卡片式设计
+function CheckboxGroup({
+  group,
+  selectedValues,
+  onChange,
+}: {
+  group: PromptConfigGroupWithOptions;
+  selectedValues: string[];
+  onChange: (values: string[]) => void;
+}) {
+  const handleToggle = (optionKey: string) => {
+    if (selectedValues.includes(optionKey)) {
+      onChange(selectedValues.filter((v) => v !== optionKey));
+    } else {
+      onChange([...selectedValues, optionKey]);
+    }
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">
+        {group.group_name}
+      </label>
+      <div className="grid grid-cols-2 gap-2">
+        {group.options.map((option) => {
+          const isSelected = selectedValues.includes(option.option_key);
+          return (
+            <motion.button
+              key={option.option_key}
+              onClick={() => handleToggle(option.option_key)}
+              whileTap={{ scale: 0.98 }}
+              className={cn(
+                'relative flex items-center gap-2 py-2 px-3 rounded-lg transition-all duration-200',
+                'border text-left',
+                isSelected
+                  ? 'bg-zinc-900 dark:bg-white border-zinc-900 dark:border-white'
+                  : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500'
+              )}
+            >
+              {/* 自定义复选框 */}
+              <div
+                className={cn(
+                  'flex-shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all duration-200',
+                  isSelected
+                    ? 'bg-white dark:bg-zinc-900 border-white dark:border-zinc-900'
+                    : 'border-zinc-300 dark:border-zinc-600'
+                )}
+              >
+                <AnimatePresence>
+                  {isSelected && (
+                    <motion.svg
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                      className="w-2.5 h-2.5 text-zinc-900 dark:text-white"
+                      viewBox="0 0 12 12"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M2 6l3 3 5-6" />
+                    </motion.svg>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* 标签文字 */}
+              <span
+                className={cn(
+                  'text-xs font-medium transition-colors duration-200',
+                  isSelected
+                    ? 'text-white dark:text-zinc-900'
+                    : 'text-zinc-600 dark:text-zinc-400'
+                )}
+              >
+                {option.option_label}
+              </span>
+
+              {/* 选中时的光晕效果 */}
+              {isSelected && (
+                <motion.div
+                  layoutId={`checkbox-glow-${option.option_key}`}
+                  className="absolute inset-0 rounded-lg bg-zinc-900/5 dark:bg-white/5 -z-10"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                />
+              )}
+            </motion.button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// 渲染带图片的选项（用于带 image_url 的选项）
+function ImageOptionGroup({
+  group,
+  selectedValue,
+  onChange,
+}: {
+  group: PromptConfigGroupWithOptions;
+  selectedValue: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">
+        {group.group_name}
+      </label>
+      <div className="grid grid-cols-4 gap-1.5">
+        {group.options.map((option) => (
+          <button
+            key={option.option_key}
+            onClick={() => onChange(option.option_key)}
+            className={cn(
+              'relative aspect-square rounded-md overflow-hidden transition-all border-2',
+              selectedValue === option.option_key
+                ? 'border-zinc-900 dark:border-white'
+                : 'border-transparent'
+            )}
+          >
+            {option.image_url ? (
+              <img
+                src={option.image_url}
+                alt={option.option_label}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 text-[10px] text-zinc-500">
+                {option.option_label}
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 根据配置组类型渲染对应组件
+function ConfigGroupRenderer({
+  group,
+  value,
+  onChange,
+}: {
+  group: PromptConfigGroupWithOptions;
+  value: string | string[] | boolean;
+  onChange: (value: string | string[] | boolean) => void;
+}) {
+  // 如果有图片选项，使用图片渲染器
+  const hasImageOptions = group.options.some((opt) => opt.image_url);
+
+  switch (group.input_type) {
+    case 'toggle':
+      return (
+        <ToggleGroup
+          group={group}
+          selectedValue={value as boolean}
+          onChange={onChange}
+        />
+      );
+    case 'checkbox':
+      return (
+        <CheckboxGroup
+          group={group}
+          selectedValues={(value as string[]) || []}
+          onChange={onChange}
+        />
+      );
+    case 'select':
+      return (
+        <SelectGroup
+          group={group}
+          selectedValue={value as string}
+          onChange={onChange}
+        />
+      );
+    case 'radio':
+    default:
+      if (hasImageOptions) {
+        return (
+          <ImageOptionGroup
+            group={group}
+            selectedValue={value as string}
+            onChange={onChange}
+          />
+        );
+      }
+      return (
+        <RadioGroup
+          group={group}
+          selectedValue={value as string}
+          onChange={onChange}
+        />
+      );
+  }
+}
 
 export function AdvancedSettings() {
   const {
     advancedSettingsOpen,
     setAdvancedSettingsOpen,
-    resolution,
-    setResolution,
-    aspectRatio,
-    setAspectRatio,
-    fit,
-    setFit,
-    preserveIdentity,
-    setPreserveIdentity,
+    dynamicConfigs,
+    setDynamicConfig,
+    setDynamicConfigs,
   } = useTryOnStore();
+
+  const { configs, isLoading, error } = usePromptConfig();
+
+  // 初始化默认值
+  useEffect(() => {
+    if (configs.length > 0) {
+      const defaults: Record<string, string | string[] | boolean> = {};
+      configs.forEach((group) => {
+        // 如果已有值则跳过
+        if (dynamicConfigs[group.group_key] !== undefined) return;
+
+        if (group.input_type === 'toggle') {
+          defaults[group.group_key] = group.default_option_key === 'true';
+        } else if (group.input_type === 'checkbox' || group.is_multiple) {
+          const defaultOptions = group.options
+            .filter((opt) => opt.is_default)
+            .map((opt) => opt.option_key);
+          defaults[group.group_key] = defaultOptions.length > 0 ? defaultOptions : [];
+        } else {
+          const defaultOption = group.options.find((opt) => opt.is_default);
+          defaults[group.group_key] =
+            defaultOption?.option_key ||
+            group.default_option_key ||
+            group.options[0]?.option_key ||
+            '';
+        }
+      });
+
+      if (Object.keys(defaults).length > 0) {
+        setDynamicConfigs({ ...dynamicConfigs, ...defaults });
+      }
+    }
+  }, [configs]);
 
   return (
     <motion.div
@@ -41,7 +364,7 @@ export function AdvancedSettings() {
         <div className="flex items-center gap-2">
           <Settings2 className="w-3.5 h-3.5 text-zinc-500" />
           <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
-            Advanced Settings
+            高级设置
           </span>
         </div>
         <motion.div
@@ -62,94 +385,29 @@ export function AdvancedSettings() {
             className="overflow-hidden"
           >
             <div className="p-3 space-y-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-200 dark:border-zinc-700">
-              {/* Fit */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">
-                  Fit
-                </label>
-                <div className="flex gap-1.5">
-                  {fitOptions.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setFit(opt.value as 'loose' | 'fit' | 'tight')}
-                      className={cn(
-                        'flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all',
-                        fit === opt.value
-                          ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900'
-                          : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700'
-                      )}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
+              {isLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+                  <span className="ml-2 text-xs text-zinc-500">加载配置中...</span>
                 </div>
-              </div>
-
-              {/* Resolution */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">
-                  Resolution
-                </label>
-                <div className="flex gap-1.5">
-                  {resolutions.map((r) => (
-                    <button
-                      key={r}
-                      onClick={() => setResolution(r)}
-                      className={cn(
-                        'flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all',
-                        resolution === r
-                          ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900'
-                          : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700'
-                      )}
-                    >
-                      {r}
-                    </button>
-                  ))}
+              ) : error ? (
+                <div className="text-center py-4 text-xs text-red-500">
+                  加载配置失败: {error.message}
                 </div>
-              </div>
-
-              {/* Aspect Ratio */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">
-                  Aspect Ratio
-                </label>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {aspectRatios.map((r) => (
-                    <button
-                      key={r}
-                      onClick={() => setAspectRatio(r)}
-                      className={cn(
-                        'py-1.5 px-2 text-xs font-medium rounded-md transition-all',
-                        aspectRatio === r
-                          ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900'
-                          : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700'
-                      )}
-                    >
-                      {r}
-                    </button>
-                  ))}
+              ) : configs.length === 0 ? (
+                <div className="text-center py-4 text-xs text-zinc-500">
+                  暂无可用配置
                 </div>
-              </div>
-
-              {/* Preserve Identity */}
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-xs text-zinc-600 dark:text-zinc-400">
-                  Preserve Identity
-                </span>
-                <button
-                  onClick={() => setPreserveIdentity(!preserveIdentity)}
-                  className={cn(
-                    'relative w-8 h-4.5 rounded-full transition-colors',
-                    preserveIdentity ? 'bg-zinc-900 dark:bg-white' : 'bg-zinc-300 dark:bg-zinc-600'
-                  )}
-                >
-                  <motion.div
-                    animate={{ x: preserveIdentity ? 16 : 2 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                    className="absolute top-0.5 left-0.5 w-3.5 h-3.5 bg-white dark:bg-zinc-900 rounded-full shadow-sm"
+              ) : (
+                configs.map((group) => (
+                  <ConfigGroupRenderer
+                    key={group.group_key}
+                    group={group}
+                    value={dynamicConfigs[group.group_key]}
+                    onChange={(value) => setDynamicConfig(group.group_key, value)}
                   />
-                </button>
-              </div>
+                ))
+              )}
             </div>
           </motion.div>
         )}
