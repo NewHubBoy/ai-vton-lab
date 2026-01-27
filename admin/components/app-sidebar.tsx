@@ -18,6 +18,7 @@ import {
     Siren,
     TableOfContents,
     CircleDollarSign,
+    Shirt,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -54,10 +55,11 @@ const iconMap: Record<string, LucideIcon> = {
     'home': LayoutDashboard,
     'guide': BookOpen,
     'business': Building2,
-    "models": Album,
+    "model-photos": Album,
     'prompts': Siren,
     'records': TableOfContents,
-    'topup': CircleDollarSign
+    'topup': CircleDollarSign,
+    'tryon-records': Shirt
 }
 
 // NavSubItem definition for children

@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from './query-keys'
-import { baseApi, userApi, roleApi, menuApi, apiManagementApi, deptApi, auditLogApi, promptConfigApi, imageTaskApi } from './index'
+import { baseApi, userApi, roleApi, menuApi, apiManagementApi, deptApi, auditLogApi, promptConfigApi, imageTaskApi, modelPhotoApi } from './index'
 import { usePathname } from 'next/navigation'
 
 // ============ Base Hooks ============
@@ -397,5 +397,39 @@ export function useImageTaskDetail(taskId: string) {
     queryKey: queryKeys.imageTaskDetail(taskId),
     queryFn: () => imageTaskApi.getDetail({ task_id: taskId }),
     enabled: !!taskId,
+  })
+}
+
+// ============ Model Photo Hooks ============
+
+export function useModelPhotos(params?: Parameters<typeof modelPhotoApi.getList>[0]) {
+  return useQuery({
+    queryKey: queryKeys.modelPhotos(params as object),
+    queryFn: () => modelPhotoApi.getList(params),
+  })
+}
+
+export function useModelPhotoDetail(id: number) {
+  return useQuery({
+    queryKey: queryKeys.modelPhotoDetail(id),
+    queryFn: () => modelPhotoApi.getDetail({ id }),
+    enabled: !!id,
+  })
+}
+
+// ============ Model Photo Hooks (Tryon Records) ============
+
+export function useModelPhotosTryon(params?: Parameters<typeof modelPhotoApi.getTryonList>[0]) {
+  return useQuery({
+    queryKey: queryKeys.modelPhotosTryon(params as object),
+    queryFn: () => modelPhotoApi.getTryonList(params),
+  })
+}
+
+export function useModelPhotoTryonDetail(id: number) {
+  return useQuery({
+    queryKey: queryKeys.modelPhotoTryonDetail(id),
+    queryFn: () => modelPhotoApi.getTryonDetail({ id }),
+    enabled: !!id,
   })
 }

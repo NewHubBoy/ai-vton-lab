@@ -14,6 +14,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ImageIcon,
+  Shirt,
+  User,
 } from 'lucide-react'
 
 interface NavItem {
@@ -38,6 +40,16 @@ const mainNavItems: NavItem[] = [
     title: '生成记录',
     href: '/business/records',
     icon: <ImageIcon className="h-4 w-4" />,
+  },
+  {
+    title: '模特记录',
+    href: '/business/model-photos',
+    icon: <User className="h-4 w-4" />,
+  },
+  {
+    title: '换装记录',
+    href: '/business/tryon-records',
+    icon: <Shirt className="h-4 w-4" />,
   },
 ]
 

@@ -39,9 +39,10 @@ class ModelPhotoResponse(ModelPhotoCreate):
     progress: int
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
+        ser_json_datetimes = "iso8601"
 
 class ModelImageCreate(BaseModel):
     model_photo_id: int
@@ -60,6 +61,7 @@ class ModelImageResponse(ModelImageCreate):
     id: int
     user_id: int
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
+        ser_json_datetimes = "iso8601"

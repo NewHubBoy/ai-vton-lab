@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, Optional
 
 from fastapi.responses import JSONResponse
@@ -11,6 +12,10 @@ class Success(JSONResponse):
         data: Optional[Any] = None,
         **kwargs,
     ):
+        from pydantic import BaseModel
+
+        if isinstance(data, BaseModel):
+            data = data.model_dump()
         content = {"code": code, "msg": msg, "data": data}
         content.update(kwargs)
         super().__init__(content=content, status_code=code)
@@ -24,6 +29,10 @@ class Fail(JSONResponse):
         data: Optional[Any] = None,
         **kwargs,
     ):
+        from pydantic import BaseModel
+
+        if isinstance(data, BaseModel):
+            data = data.model_dump()
         content = {"code": code, "msg": msg, "data": data}
         content.update(kwargs)
         super().__init__(content=content, status_code=code)
@@ -40,6 +49,16 @@ class SuccessExtra(JSONResponse):
         page_size: int = 20,
         **kwargs,
     ):
+        from pydantic import BaseModel
+
+        if isinstance(data, BaseModel):
+            data = data.model_dump()
+        elif isinstance(data, list):
+            data = [
+                item.model_dump() if isinstance(item, BaseModel) else item
+                for item in data
+            ]
+
         content = {
             "code": code,
             "msg": msg,
@@ -49,4 +68,16 @@ class SuccessExtra(JSONResponse):
             "page_size": page_size,
         }
         content.update(kwargs)
+
+        # 递归处理 datetime 序列化
+        def convert_datetime(obj):
+            if isinstance(obj, datetime):
+                return obj.isoformat()
+            elif isinstance(obj, dict):
+                return {k: convert_datetime(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_datetime(item) for item in obj]
+            return obj
+
+        content = convert_datetime(content)
         super().__init__(content=content, status_code=code)

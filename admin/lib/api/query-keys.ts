@@ -38,4 +38,12 @@ export const queryKeys = {
   // Image Task (Admin)
   imageTasks: (params?: object) => ['imageTasks', params] as const,
   imageTaskDetail: (taskId: string) => ['imageTaskDetail', taskId] as const,
+
+  // Model Photo
+  modelPhotos: (params?: object) => ['modelPhotos', params] as const,
+  modelPhotoDetail: (id: number) => ['modelPhotoDetail', id] as const,
+
+  // Model Photo (Tryon Records)
+  modelPhotosTryon: (params?: object) => ['modelPhotosTryon', params] as const,
+  modelPhotoTryonDetail: (id: number) => ['modelPhotoTryonDetail', id] as const,
 }
