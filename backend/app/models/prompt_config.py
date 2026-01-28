@@ -10,7 +10,7 @@ class PromptConfigGroup(BaseModel, TimestampMixin):
     group_key = fields.CharField(max_length=64, unique=True, description="配置组唯一标识")
     group_name = fields.CharField(max_length=100, description="显示名称")
     description = fields.TextField(null=True, description="配置组描述")
-    input_type = fields.CharField(max_length=32, description="select/radio/checkbox/slider")
+    input_type = fields.CharField(max_length=32, description="select/radio/radiobox/checkbox/slider/toggle")
     is_multiple = fields.BooleanField(default=False, description="是否支持多选")
     is_required = fields.BooleanField(default=False, description="是否必选")
     placeholder = fields.CharField(max_length=255, null=True, description="占位提示文字")

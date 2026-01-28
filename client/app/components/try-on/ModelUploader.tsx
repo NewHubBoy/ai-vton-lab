@@ -65,7 +65,7 @@ export function ModelUploader({ className }: ModelUploaderProps) {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="relative group aspect-6/9 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800"
+            className="relative group aspect-3/4 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800"
           >
             <img
               src={modelImage.preview}
@@ -103,7 +103,7 @@ export function ModelUploader({ className }: ModelUploaderProps) {
             onClick={() => fileInputRef.current?.click()}
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
-            className="aspect-6/9 rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 hover:border-violet-400 dark:hover:border-violet-500 cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 bg-zinc-50 dark:bg-zinc-800/50"
+            className="aspect-3/4 rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 hover:border-violet-400 dark:hover:border-violet-500 cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 bg-zinc-50 dark:bg-zinc-800/50"
           >
             <ImageIcon className="w-5 h-5 text-zinc-400" />
             <p className="text-xs text-zinc-500">

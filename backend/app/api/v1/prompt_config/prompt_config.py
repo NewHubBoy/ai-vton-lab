@@ -27,7 +27,7 @@ async def get_groups(is_active: bool = True):
 @router.post("/groups", summary="创建配置组")
 async def create_group(data: PromptConfigGroupCreate):
     obj = await PromptConfigGroup.create(**data.model_dump())
-    return Success(data=PromptConfigGroupResponse.model_validate(obj).model_dump())
+    return Success(data=jsonable_encoder(PromptConfigGroupResponse.model_validate(obj).model_dump()))
 
 
 @router.put("/groups/{id}", summary="更新配置组")
@@ -37,7 +37,7 @@ async def update_group(id: int, data: PromptConfigGroupUpdate):
         raise HTTPException(status_code=404, detail="配置组不存在")
     await obj.update_from_dict(data.model_dump(exclude_unset=True))
     await obj.save()
-    return Success(data=PromptConfigGroupResponse.model_validate(obj).model_dump())
+    return Success(data=jsonable_encoder(PromptConfigGroupResponse.model_validate(obj).model_dump()))
 
 
 # --- Options ---
@@ -57,7 +57,7 @@ async def get_options(group_id: int, is_active: bool = True):
 @router.post("/options", summary="创建配置选项")
 async def create_option(data: PromptConfigOptionCreate):
     obj = await PromptConfigOption.create(**data.model_dump())
-    return Success(data=PromptConfigOptionResponse.model_validate(obj).model_dump())
+    return Success(data=jsonable_encoder(PromptConfigOptionResponse.model_validate(obj).model_dump()))
 
 
 @router.put("/options/{id}", summary="更新配置选项")
@@ -67,4 +67,4 @@ async def update_option(id: int, data: PromptConfigOptionUpdate):
         raise HTTPException(status_code=404, detail="配置选项不存在")
     await obj.update_from_dict(data.model_dump(exclude_unset=True))
     await obj.save()
-    return Success(data=PromptConfigOptionResponse.model_validate(obj).model_dump())
+    return Success(data=jsonable_encoder(PromptConfigOptionResponse.model_validate(obj).model_dump()))

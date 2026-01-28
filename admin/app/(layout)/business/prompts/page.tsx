@@ -229,6 +229,22 @@ function GroupForm({ initialData, type, onSubmit, isSubmitting, onCancel }: Grou
     }
   )
 
+  // 根据输入类型判断是否支持多选
+  const supportsMultiple = formData.input_type === 'select' || formData.input_type === 'checkbox'
+  // checkbox 类型强制多选
+  const isCheckbox = formData.input_type === 'checkbox'
+
+  // 当输入类型变化时，自动调整 is_multiple
+  const handleInputTypeChange = (val: string) => {
+    const newData: Partial<PromptConfigGroup> = { ...formData, input_type: val }
+    if (val === 'checkbox') {
+      newData.is_multiple = true
+    } else if (val !== 'select') {
+      newData.is_multiple = false
+    }
+    setFormData(newData)
+  }
+
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData) }} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -256,16 +272,18 @@ function GroupForm({ initialData, type, onSubmit, isSubmitting, onCancel }: Grou
           <Label>输入类型</Label>
           <Select
             value={formData.input_type}
-            onValueChange={(val) => setFormData({ ...formData, input_type: val })}
+            onValueChange={handleInputTypeChange}
           >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="select">下拉选择</SelectItem>
-              <SelectItem value="radio">单选框</SelectItem>
+              <SelectItem value="radio">按钮单选</SelectItem>
+              <SelectItem value="radiobox">圆形单选框</SelectItem>
               <SelectItem value="checkbox">多选框</SelectItem>
-              <SelectItem value="text">文本输入</SelectItem>
+              <SelectItem value="toggle">开关</SelectItem>
+              <SelectItem value="slider">滑块</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -295,13 +313,18 @@ function GroupForm({ initialData, type, onSubmit, isSubmitting, onCancel }: Grou
           />
           <Label>启用</Label>
         </div>
-        <div className="flex items-center gap-2">
-          <Switch
-            checked={formData.is_multiple}
-            onCheckedChange={(checked) => setFormData({ ...formData, is_multiple: checked })}
-          />
-          <Label>多选</Label>
-        </div>
+        {supportsMultiple && (
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={formData.is_multiple}
+              onCheckedChange={(checked) => setFormData({ ...formData, is_multiple: checked })}
+              disabled={isCheckbox}
+            />
+            <Label className={isCheckbox ? 'text-muted-foreground' : ''}>
+              多选{isCheckbox ? '（多选框默认多选）' : ''}
+            </Label>
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <Switch
             checked={formData.is_required}

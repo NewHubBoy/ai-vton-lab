@@ -8,7 +8,7 @@ export interface PromptConfigGroup {
     group_key: string;
     group_name: string;
     description?: string | null;
-    input_type: 'select' | 'radio' | 'checkbox' | 'slider' | 'toggle';
+    input_type: 'select' | 'radio' | 'radiobox' | 'checkbox' | 'slider' | 'toggle';
     is_multiple: boolean;
     is_required: boolean;
     placeholder?: string | null;

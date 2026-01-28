@@ -41,7 +41,7 @@ export const createSettingsSlice: StateCreator<SettingsSlice> = (set) => ({
   preserveIdentity: true,
   setPreserveIdentity: (preserveIdentity) => set({ preserveIdentity }),
 
-  advancedSettingsOpen: true,
+  advancedSettingsOpen: false,
   setAdvancedSettingsOpen: (open) => set({ advancedSettingsOpen: open }),
 
   // 动态配置选项

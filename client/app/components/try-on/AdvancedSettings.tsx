@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { usePromptConfig } from '@/hooks/usePromptConfig';
 import { PromptConfigGroupWithOptions, PromptConfigOption } from '@/lib/api/prompt-config';
 
-// 渲染单选按钮组
+// 渲染单选按钮组 - 滑块式 Tab 样式
 function RadioGroup({
   group,
   selectedValue,
@@ -18,26 +18,45 @@ function RadioGroup({
   selectedValue: string;
   onChange: (value: string) => void;
 }) {
+  const activeIndex = group.options.findIndex((opt) => opt.option_key === selectedValue);
+  const optionCount = group.options.length;
+
   return (
     <div className="space-y-1.5">
       <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">
         {group.group_name}
       </label>
-      <div className="flex gap-1.5 flex-wrap">
+      <div className="relative flex gap-1 p-0.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
         {group.options.map((option) => (
           <button
             key={option.option_key}
             onClick={() => onChange(option.option_key)}
             className={cn(
-              'flex-1 min-w-[60px] py-1.5 px-2 text-xs font-medium rounded-md transition-all',
+              'flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors z-10',
               selectedValue === option.option_key
-                ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900'
-                : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700'
+                ? 'text-zinc-900 dark:text-white'
+                : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
             )}
           >
             {option.option_label}
           </button>
         ))}
+        {/* Animated tab indicator */}
+        {activeIndex >= 0 && (
+          <motion.div
+            className="absolute top-0.5 bottom-0.5 rounded-md bg-white dark:bg-zinc-700 shadow-sm"
+            initial={false}
+            animate={{
+              left: `calc(${activeIndex * (100 / optionCount)}% + 2px)`,
+              width: `calc(${100 / optionCount}% - 4px)`,
+            }}
+            transition={{
+              type: 'spring',
+              stiffness: 500,
+              damping: 30,
+            }}
+          />
+        )}
       </div>
     </div>
   );
@@ -101,6 +120,85 @@ function ToggleGroup({
           className="absolute top-0.5 left-0.5 w-3.5 h-3.5 bg-white dark:bg-zinc-900 rounded-full shadow-sm"
         />
       </button>
+    </div>
+  );
+}
+
+// 渲染圆形单选框组（radiobox）- 传统单选框样式
+function RadioboxGroup({
+  group,
+  selectedValue,
+  onChange,
+}: {
+  group: PromptConfigGroupWithOptions;
+  selectedValue: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">
+        {group.group_name}
+      </label>
+      <div className="space-y-1.5">
+        {group.options.map((option) => {
+          const isSelected = selectedValue === option.option_key;
+          return (
+            <motion.button
+              key={option.option_key}
+              onClick={() => onChange(option.option_key)}
+              whileTap={{ scale: 0.98 }}
+              className={cn(
+                'w-full flex items-center gap-3 py-2 px-3 rounded-lg transition-all duration-200',
+                'border text-left',
+                isSelected
+                  ? 'bg-zinc-50 dark:bg-zinc-800 border-zinc-900 dark:border-white'
+                  : 'bg-white dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500'
+              )}
+            >
+              {/* 圆形单选框 */}
+              <div
+                className={cn(
+                  'shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-200',
+                  isSelected
+                    ? 'border-zinc-900 dark:border-white'
+                    : 'border-zinc-300 dark:border-zinc-600'
+                )}
+              >
+                <AnimatePresence>
+                  {isSelected && (
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                      className="w-2 h-2 rounded-full bg-zinc-900 dark:bg-white"
+                    />
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* 标签和描述 */}
+              <div className="flex-1 min-w-0">
+                <span
+                  className={cn(
+                    'text-xs font-medium transition-colors duration-200',
+                    isSelected
+                      ? 'text-zinc-900 dark:text-white'
+                      : 'text-zinc-600 dark:text-zinc-400'
+                  )}
+                >
+                  {option.option_label}
+                </span>
+                {option.description && (
+                  <p className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate mt-0.5">
+                    {option.description}
+                  </p>
+                )}
+              </div>
+            </motion.button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -268,6 +366,14 @@ function ConfigGroupRenderer({
         <ToggleGroup
           group={group}
           selectedValue={value as boolean}
+          onChange={onChange}
+        />
+      );
+    case 'radiobox':
+      return (
+        <RadioboxGroup
+          group={group}
+          selectedValue={value as string}
           onChange={onChange}
         />
       );
