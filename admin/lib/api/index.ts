@@ -109,7 +109,7 @@ export interface RoleAuthorized {
 export const roleApi = {
   // 获取角色列表
   getList: (params?: RoleListParams) =>
-    apiClient.get<RoleListResponse>('/role/list', params),
+    apiClient.getPaginated<RoleListResponse>('/role/list', params),
 
   // 创建角色
   create: (data: Partial<Role>) =>
