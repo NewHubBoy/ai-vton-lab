@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Plus, Search, Pencil, Trash2, ChevronRight, ChevronDown, Folder, FileText, MousePointerClick } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { IconPicker, IconDisplay } from '@/components/icon-picker'
 
 // 扁平化树（用于下拉选择，带层级标识）
 const flattenTree = (tree: Menu[], level = 0, result: (Menu & { level: number })[] = []) => {
@@ -144,7 +145,7 @@ export default function MenusPage() {
             </div>
           </TableCell>
           <TableCell>
-            <span className="text-muted-foreground text-xs">{node.icon || '-'}</span>
+            <IconDisplay iconName={node.icon} className="h-4 w-4" fallback={<span className="text-muted-foreground text-xs">-</span>} />
           </TableCell>
           <TableCell className="text-xs font-mono text-muted-foreground">{node.path || '-'}</TableCell>
           <TableCell className="text-xs font-mono text-muted-foreground">{node.component || '-'}</TableCell>
@@ -311,7 +312,7 @@ export default function MenusPage() {
 
             <div className="grid gap-2">
               <Label htmlFor="icon">图标 (Icon)</Label>
-              <Input id="icon" value={formData.icon} onChange={(e) => setFormData({ ...formData, icon: e.target.value })} placeholder="carbon:gui-management" />
+              <IconPicker value={formData.icon} onChange={(iconName) => setFormData({ ...formData, icon: iconName })} placeholder="选择图标" />
             </div>
 
             {formData.menu_type !== 'button' && (

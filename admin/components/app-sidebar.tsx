@@ -2,23 +2,9 @@
 
 import * as React from "react"
 import {
-    BookOpen,
     Command,
-    Settings2,
     SquareTerminal,
-    LayoutDashboard,
-    Users,
-    UserCog,
-    Menu as MenuIcon,
-    Building2,
-    Shield,
-    FileText,
     type LucideIcon,
-    Album,
-    Siren,
-    TableOfContents,
-    CircleDollarSign,
-    Shirt,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -34,33 +20,7 @@ import {
 } from "@/components/ui/sidebar"
 import { NavUser } from "@/components/nav-user"
 import { useAuth, type MenuItem, type MenuType } from "./auth-provider"
-
-// Icon 映射表
-const iconMap: Record<string, LucideIcon> = {
-    'dashboard': LayoutDashboard,
-    'user': Users,
-    'users': Users,
-    'role': UserCog,
-    'roles': UserCog,
-    'menu': MenuIcon,
-    'menus': MenuIcon,
-    'dept': Building2,
-    'depts': Building2,
-    'api': Shield,
-    'apis': Shield,
-    'auditlog': FileText,
-    'auditlogs': FileText,
-    'setting': Settings2,
-    'settings': Settings2,
-    'home': LayoutDashboard,
-    'guide': BookOpen,
-    'business': Building2,
-    "model-photos": Album,
-    'prompts': Siren,
-    'records': TableOfContents,
-    'recharge': CircleDollarSign,
-    'tryon-records': Shirt
-}
+import { getIconComponent } from "./icon-picker"
 
 // NavSubItem definition for children
 interface NavSubItem {
@@ -89,10 +49,8 @@ function transformMenusToNavMain(menus: MenuItem[]): NavMainItem[] {
     const navItems = menus
         .filter(menu => !menu.is_hidden)
         .map((menu) => {
-            // 获取 icon：从 path 去掉 /，取最后一段作为 icon key
-            // 例如 /system/users -> users
-            const iconKey = menu.path ? menu.path.replace(/^\//, '').split('/').pop() || '' : ''
-            const IconComponent = iconKey ? iconMap[iconKey] || SquareTerminal : SquareTerminal
+            // 获取 icon：优先使用数据库中存储的 icon 字段
+            const IconComponent = menu.icon ? (getIconComponent(menu.icon) || SquareTerminal) : SquareTerminal
 
             // 父级 path（用于拼接子菜单 URL）
             const parentPath = menu.path || ''
@@ -101,20 +59,19 @@ function transformMenusToNavMain(menus: MenuItem[]): NavMainItem[] {
             let items: NavSubItem[] | undefined
             if (menu.children && menu.children.length > 0) {
                 items = menu.children
-                    .filter((child: any) => !child.is_hidden && child.menu_type !== 'button')
-                    .map((child: any) => {
+                    .filter((child: MenuItem) => !child.is_hidden && child.menu_type !== 'button')
+                    .map((child: MenuItem) => {
                         // 拼接 URL：父级 path + 子菜单 path
                         const childUrl = parentPath.endsWith('/') ? parentPath + (child.path || '') : parentPath + "/" + (child.path || '')
 
-                        // 子菜单 icon
-                        const childIconKey = child.path ? child.path.replace(/^\//, '').split('/').pop() || '' : ''
-                        const childIcon = childIconKey ? iconMap[childIconKey] : undefined
+                        // 子菜单 icon：优先使用数据库中存储的 icon 字段
+                        const childIcon = child.icon ? getIconComponent(child.icon) || undefined : undefined
 
                         return {
                             title: child.name,
                             url: childUrl || '#',
                             icon: childIcon,
-                            menu_type: child.menu_type,
+                            menu_type: child.menu_type as MenuType | null,
                             sort: child.order || 0,
                         }
                     })
