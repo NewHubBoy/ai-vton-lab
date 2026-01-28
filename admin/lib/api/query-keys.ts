@@ -46,4 +46,8 @@ export const queryKeys = {
   // Model Photo (Tryon Records)
   modelPhotosTryon: (params?: object) => ['modelPhotosTryon', params] as const,
   modelPhotoTryonDetail: (id: number) => ['modelPhotoTryonDetail', id] as const,
+
+  // Customer
+  customers: (params?: object) => ['customers', params] as const,
+  customer: (id: number) => ['customer', id] as const,
 }

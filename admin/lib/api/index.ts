@@ -469,6 +469,67 @@ export const modelPhotoApi = {
     apiClient.get<ModelPhoto>('/model-photo/tryon', params),
 }
 
+// ============ Customer APIs ============
+
+export interface Customer {
+  id: number
+  username: string
+  email: string
+  alias?: string
+  phone?: string
+  credit_balance: number
+  total_recharged: number
+  is_active: boolean
+  last_login?: string
+  created_at: string
+  updated_at: string
+  roles?: Array<{ id: number; name: string }>
+}
+
+export interface CustomerListParams {
+  page?: number
+  page_size?: number
+  username?: string
+  email?: string
+}
+
+export interface CustomerListResponse {
+  data: Customer[]
+  total: number
+  page: number
+  page_size: number
+}
+
+export const customerApi = {
+  // 获取客户列表
+  getList: (params?: CustomerListParams) =>
+    apiClient.getPaginated<Customer[]>('/customer/list', params),
+
+  // 获取客户详情
+  getById: (params: { customer_id: number }) =>
+    apiClient.get<Customer>('/customer/get', params),
+
+  // 创建客户
+  create: (data: { username: string; email: string; password: string; alias?: string; phone?: string }) =>
+    apiClient.post<Customer>('/customer/create', data),
+
+  // 更新客户
+  update: (data: Partial<Customer> & { id: number }) =>
+    apiClient.post<Customer>('/customer/update', data),
+
+  // 删除客户
+  delete: (params: { customer_id: number }) =>
+    apiClient.delete<null>('/customer/delete', params),
+
+  // 重置密码
+  resetPassword: (data: { customer_id: number }) =>
+    apiClient.post<null>('/customer/reset_password', data),
+
+  // 给客户充值积分
+  addCredits: (data: { customer_id: number; credits: number; remark?: string }) =>
+    apiClient.post<{ new_balance: number }>('/customer/add_credits', data),
+}
+
 // ============ Recharge APIs ============
 
 export interface UserCredits {

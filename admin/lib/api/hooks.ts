@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from './query-keys'
-import { baseApi, userApi, roleApi, menuApi, apiManagementApi, deptApi, auditLogApi, promptConfigApi, imageTaskApi, modelPhotoApi, rechargeApi } from './index'
+import { baseApi, userApi, roleApi, menuApi, apiManagementApi, deptApi, auditLogApi, promptConfigApi, imageTaskApi, modelPhotoApi, rechargeApi, customerApi } from './index'
 import { usePathname } from 'next/navigation'
 
 // ============ Base Hooks ============
@@ -550,6 +550,73 @@ export function useAdminAddUserCredits() {
     mutationFn: rechargeApi.adminAddCredits,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
+    },
+  })
+}
+
+// ============ Customer Hooks ============
+
+export function useCustomers(params?: Parameters<typeof customerApi.getList>[0]) {
+  return useQuery({
+    queryKey: queryKeys.customers(params as object),
+    queryFn: () => customerApi.getList(params),
+  })
+}
+
+export function useCustomer(id: number) {
+  return useQuery({
+    queryKey: queryKeys.customer(id),
+    queryFn: () => customerApi.getById({ customer_id: id }),
+    enabled: !!id,
+  })
+}
+
+export function useCreateCustomer() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: customerApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+    },
+  })
+}
+
+export function useUpdateCustomer() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: customerApi.update,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+    },
+  })
+}
+
+export function useDeleteCustomer() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: customerApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+    },
+  })
+}
+
+export function useResetCustomerPassword() {
+  return useMutation({
+    mutationFn: customerApi.resetPassword,
+  })
+}
+
+export function useAddCustomerCredits() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: customerApi.addCredits,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
     },
   })
 }

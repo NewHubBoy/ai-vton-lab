@@ -15,6 +15,7 @@ from .ws import ws_router
 from .model_photo import model_photo_router
 from .prompt_config import prompt_config_router
 from .recharge import recharge_router
+from .customers import customers_router
 
 v1_router = APIRouter()
 
@@ -37,3 +38,4 @@ v1_router.include_router(ws_router, prefix="/ws")
 v1_router.include_router(model_photo_router, prefix="/model-photo", dependencies=[DependAuth])
 v1_router.include_router(prompt_config_router, prefix="/prompt-config", dependencies=[DependAuth])
 v1_router.include_router(recharge_router, prefix="/recharge", dependencies=[DependAuth])
+v1_router.include_router(customers_router, prefix="/customer", dependencies=[DependPermission])
