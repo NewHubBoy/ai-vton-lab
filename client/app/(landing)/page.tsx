@@ -2,15 +2,25 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Sparkles, ArrowRight, Check, Zap, Layers, Image as ImageIcon, Shield } from 'lucide-react'
+import { Sparkles, ArrowRight, Check, Zap, Layers, Image as ImageIcon, Shield, UserRound, FileImage, Shirt, Sparkle } from 'lucide-react'
 import { LandingHeader } from '@/components/landing-header'
 import { Button } from '@/components/ui/button'
 
 const features = [
     {
-        name: 'AI 智能换装',
-        description: '基于 Google GenAI 技术，精准还原服装细节，上传服装即可生成模特试穿效果图。',
-        icon: Zap,
+        name: 'AI 虚拟试穿',
+        description: '上传服装和模特照片，AI 精准匹配，生成自然真实的穿搭效果图。',
+        icon: Shirt,
+    },
+    {
+        name: 'AI 模特生成',
+        description: '选择性别、年龄、风格等参数，快速生成专业级 AI 模特照片。',
+        icon: UserRound,
+    },
+    {
+        name: '详情页生成',
+        description: '上传商品图片，自动生成电商详情页，大幅提升运营效率。',
+        icon: FileImage,
     },
     {
         name: '多样场景',
@@ -20,7 +30,7 @@ const features = [
     {
         name: '极速生成',
         description: '秒级响应，支持批量处理，大幅提升电商选款和营销素材制作效率。',
-        icon: ImageIcon,
+        icon: Zap,
     },
     {
         name: '隐私安全',
@@ -32,18 +42,18 @@ const features = [
 const steps = [
     {
         number: '01',
-        title: '上传服装',
-        description: '上传您要展示的服装照片，系统自动识别服装轮廓和细节。',
+        title: '选择功能',
+        description: '根据需求选择换装试穿、模特生成或详情页生成，一键切换。',
     },
     {
         number: '02',
-        title: '选择模特',
-        description: '从多样化的模特库中选择，或上传参考图片定制专属展示。',
+        title: '上传素材',
+        description: '上传服装、模特照片或商品图片，系统自动识别并优化处理。',
     },
     {
         number: '03',
-        title: 'AI 生成',
-        description: 'AI 引擎精准匹配，生成自然真实的穿搭效果图。',
+        title: '配置参数',
+        description: '选择分辨率、宽高比、贴合度等专业参数，打造专属效果。',
     },
     {
         number: '04',
@@ -56,22 +66,26 @@ const showcase = [
     {
         id: 1,
         image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80',
-        title: '春夏连衣裙',
+        title: '虚拟试穿 - 连衣裙',
+        tag: '换装试穿',
     },
     {
         id: 2,
         image: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=800&q=80',
-        title: '商务正装',
+        title: 'AI 模特 - 商务风格',
+        tag: '模特生成',
     },
     {
         id: 3,
         image: 'https://images.unsplash.com/photo-1558171813-4c088753af8f?w=800&q=80',
-        title: '休闲穿搭',
+        title: '详情页 - 女装套装',
+        tag: '详情页生成',
     },
     {
         id: 4,
         image: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80',
-        title: '时尚外套',
+        title: '虚拟试穿 - 时尚外套',
+        tag: '换装试穿',
     },
 ]
 
@@ -157,7 +171,7 @@ export default function LandingPage() {
                             <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white dark:bg-zinc-900 px-4 py-2 shadow-lg ring-1 ring-zinc-200 dark:ring-zinc-800">
                                 <Sparkles className="w-4 h-4 text-violet-500" />
                                 <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                    AI 驱动的虚拟试穿
+                                    AI 驱动的时尚图像生成
                                 </span>
                             </div>
 
@@ -165,15 +179,40 @@ export default function LandingPage() {
                             <h1 className="text-4xl font-bold tracking-tight text-zinc-900 sm:text-6xl dark:text-white">
                                 轻松实现
                                 <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-fuchsia-500">
-                                    AI 虚拟试穿
+                                    AI 时尚图像生成
                                 </span>
                             </h1>
 
                             {/* Description */}
                             <p className="mt-6 text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
-                                上传服装照片，AI 自动生成高质量模特试穿效果图。
-                                降低拍摄成本，提升效率，让服装展示更加专业。
+                                虚拟试穿、模特生成、详情页制作，一站式 AI 图像生成平台。
+                                降低拍摄成本，提升效率，让时尚展示更加专业。
                             </p>
+
+                            {/* 功能入口 */}
+                            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                                <Link
+                                    href="/login"
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-colors"
+                                >
+                                    <Shirt className="w-4 h-4" />
+                                    <span className="text-sm font-medium">虚拟试穿</span>
+                                </Link>
+                                <Link
+                                    href="/login"
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 hover:bg-fuchsia-200 dark:hover:bg-fuchsia-900/50 transition-colors"
+                                >
+                                    <UserRound className="w-4 h-4" />
+                                    <span className="text-sm font-medium">模特生成</span>
+                                </Link>
+                                <Link
+                                    href="/login"
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                                >
+                                    <FileImage className="w-4 h-4" />
+                                    <span className="text-sm font-medium">详情页生成</span>
+                                </Link>
+                            </div>
 
                             {/* CTA */}
                             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -236,7 +275,7 @@ export default function LandingPage() {
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                             {features.map((feature, index) => (
                                 <div
                                     key={feature.name}
@@ -328,6 +367,12 @@ export default function LandingPage() {
                                             loading="lazy"
                                         />
                                     </div>
+                                    {/* Tag */}
+                                    <div className="absolute top-3 left-3">
+                                        <span className="inline-flex items-center rounded-full bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm px-2.5 py-1 text-xs font-medium text-zinc-700 dark:text-zinc-300 shadow-sm">
+                                            {item.tag}
+                                        </span>
+                                    </div>
                                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity">
                                         <div className="absolute bottom-0 left-0 right-0 p-4">
                                             <p className="text-lg font-semibold text-white">{item.title}</p>
@@ -417,8 +462,25 @@ export default function LandingPage() {
                                     开启您的 AI 时尚之旅
                                 </h2>
                                 <p className="mt-4 text-zinc-300 dark:text-zinc-700">
-                                    立即注册，免费体验 AI 智能换装功能。无需信用卡，立即开始创作。
+                                    立即注册，免费体验三大 AI 图像生成功能。无需信用卡，立即开始创作。
                                 </p>
+                                {/* 功能特色 */}
+                                <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-zinc-400 dark:text-zinc-600">
+                                    <span className="flex items-center gap-1.5">
+                                        <Sparkle className="w-4 h-4" />
+                                        虚拟试穿
+                                    </span>
+                                    <span className="w-1 h-1 rounded-full bg-zinc-600 dark:bg-zinc-400" />
+                                    <span className="flex items-center gap-1.5">
+                                        <Sparkle className="w-4 h-4" />
+                                        模特生成
+                                    </span>
+                                    <span className="w-1 h-1 rounded-full bg-zinc-600 dark:bg-zinc-400" />
+                                    <span className="flex items-center gap-1.5">
+                                        <Sparkle className="w-4 h-4" />
+                                        详情页制作
+                                    </span>
+                                </div>
                                 <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
                                     <Button asChild size="lg" className="bg-white text-zinc-900 hover:bg-zinc-100">
                                         <Link href="/login">
