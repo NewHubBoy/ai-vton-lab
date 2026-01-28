@@ -93,3 +93,28 @@ class AuditLog(BaseModel, TimestampMixin):
     response_time = fields.IntField(default=0, description="响应时间(单位ms)", index=True)
     request_args = fields.JSONField(null=True, description="请求参数")
     response_body = fields.JSONField(null=True, description="返回数据")
+
+
+class Dict(BaseModel, TimestampMixin):
+    """字典表"""
+
+    name = fields.CharField(max_length=50, description="字典名称")
+    code = fields.CharField(max_length=50, unique=True, description="字典编码", index=True)
+    description = fields.CharField(max_length=200, null=True, description="描述")
+    is_active = fields.BooleanField(default=True, description="是否启用", index=True)
+
+    class Meta:
+        table = "sys_dict"
+
+
+class DictItem(BaseModel, TimestampMixin):
+    """字典项表"""
+
+    dict = fields.ForeignKeyField("models.Dict", related_name="items", on_delete=fields.CASCADE)
+    label = fields.CharField(max_length=100, description="显示标签")
+    value = fields.CharField(max_length=100, description="值")
+    sort_order = fields.IntField(default=0, description="排序", index=True)
+    is_active = fields.BooleanField(default=True, description="是否启用", index=True)
+
+    class Meta:
+        table = "sys_dict_item"

@@ -6,6 +6,7 @@ class PromptConfigGroupCreate(BaseModel):
     group_key: str
     group_name: str
     description: Optional[str] = None
+    config_type: Optional[str] = None
     input_type: str
     is_multiple: bool = False
     is_required: bool = False
@@ -18,6 +19,7 @@ class PromptConfigGroupCreate(BaseModel):
 class PromptConfigGroupUpdate(BaseModel):
     group_name: Optional[str] = None
     description: Optional[str] = None
+    config_type: Optional[str] = None
     input_type: Optional[str] = None
     is_multiple: Optional[bool] = None
     is_required: Optional[bool] = None

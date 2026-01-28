@@ -301,6 +301,7 @@ export interface PromptConfigGroup {
   group_key: string
   group_name: string
   description?: string
+  config_type?: string
   input_type: string
   is_multiple: boolean
   is_required: boolean
@@ -341,7 +342,7 @@ export interface PromptConfigOptionListResponse {
 
 export const promptConfigApi = {
   // --- Groups ---
-  getGroups: (params?: { is_active?: boolean }) =>
+  getGroups: (params?: { is_active?: boolean; config_type?: string }) =>
     apiClient.getPaginated<PromptConfigGroup[]>('/prompt-config/groups', params),
 
   createGroup: (data: Partial<PromptConfigGroup>) =>
@@ -648,4 +649,76 @@ export const rechargeApi = {
       '/recharge/admin/user/credits/add',
       data
     ),
+}
+
+// ============ Dict APIs ============
+
+export interface Dict {
+  id: number
+  name: string
+  code: string
+  description?: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface DictItem {
+  id: number
+  dict_id: number
+  label: string
+  value: string
+  sort_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface DictListParams {
+  page?: number
+  page_size?: number
+  name?: string
+  code?: string
+}
+
+export const dictApi = {
+  // 获取字典列表
+  getDicts: (params?: DictListParams) =>
+    apiClient.getPaginated<Dict[]>('/dict/dicts', params),
+
+  // 获取字典详情
+  getDict: (id: number) =>
+    apiClient.get<Dict>(`/dict/dicts/${id}`),
+
+  // 创建字典
+  createDict: (data: Partial<Dict>) =>
+    apiClient.post<{ id: number }>('/dict/dicts', data),
+
+  // 更新字典
+  updateDict: (data: Partial<Dict> & { id: number }) =>
+    apiClient.put<null>(`/dict/dicts/${data.id}`, data),
+
+  // 删除字典
+  deleteDict: (id: number) =>
+    apiClient.delete<null>(`/dict/dicts/${id}`),
+
+  // 获取字典项列表
+  getItems: (dictId: number, params?: { page?: number; page_size?: number }) =>
+    apiClient.getPaginated<DictItem[]>(`/dict/dicts/${dictId}/items`, params),
+
+  // 根据字典编码获取项列表
+  getItemsByCode: (code: string) =>
+    apiClient.get<DictItem[]>(`/dict/code/${code}/items`),
+
+  // 创建字典项
+  createItem: (data: Partial<DictItem> & { dict_id: number }) =>
+    apiClient.post<{ id: number }>('/dict/items', data),
+
+  // 更新字典项
+  updateItem: (data: Partial<DictItem> & { id: number }) =>
+    apiClient.put<null>(`/dict/items/${data.id}`, data),
+
+  // 删除字典项
+  deleteItem: (id: number) =>
+    apiClient.delete<null>(`/dict/items/${id}`),
 }

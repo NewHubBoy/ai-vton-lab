@@ -14,10 +14,12 @@ router = APIRouter()
 
 
 @router.get("/groups", summary="获取配置组列表")
-async def get_groups(is_active: bool = True):
+async def get_groups(is_active: bool = True, config_type: str = None):
     query = PromptConfigGroup.filter()
     if is_active is not None:
         query = query.filter(is_active=is_active)
+    if config_type:
+        query = query.filter(config_type=config_type)
 
     items = await query.order_by("sort_order")
     data = [PromptConfigGroupResponse.model_validate(item).model_dump() for item in items]

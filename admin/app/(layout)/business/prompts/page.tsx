@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { toast } from 'sonner'
+import { useState } from 'react';
+import { toast } from 'sonner';
 import {
   usePromptConfigGroups,
   useCreatePromptConfigGroup,
@@ -9,73 +9,72 @@ import {
   usePromptConfigOptions,
   useCreatePromptConfigOption,
   useUpdatePromptConfigOption,
-} from '@/lib/api/hooks'
-import { PromptConfigGroup, PromptConfigOption } from '@/lib/api'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { Plus, Pencil, Settings2, Loader2, Image as ImageIcon } from 'lucide-react'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  useDictItemsByCode,
+} from '@/lib/api/hooks';
+import { PromptConfigGroup, PromptConfigOption } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Plus, Pencil, Settings2, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function PromptConfigPage() {
-  const [groupDialogOpen, setGroupDialogOpen] = useState(false)
-  const [groupDialogType, setGroupDialogType] = useState<'add' | 'edit'>('add')
-  const [currentGroup, setCurrentGroup] = useState<PromptConfigGroup | null>(null)
+  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
+  const [groupDialogType, setGroupDialogType] = useState<'add' | 'edit'>('add');
+  const [currentGroup, setCurrentGroup] = useState<PromptConfigGroup | null>(null);
+  const [filterConfigType, setFilterConfigType] = useState<string>('');
 
-  const [optionsSheetOpen, setOptionsSheetOpen] = useState(false)
-  const [selectedGroupForOptions, setSelectedGroupForOptions] = useState<PromptConfigGroup | null>(null)
+  const [optionsSheetOpen, setOptionsSheetOpen] = useState(false);
+  const [selectedGroupForOptions, setSelectedGroupForOptions] = useState<PromptConfigGroup | null>(null);
 
-  const { data: groupsResponse, isLoading: groupsLoading } = usePromptConfigGroups()
+  const { data: groupsResponse, isLoading: groupsLoading } = usePromptConfigGroups({
+    config_type: (filterConfigType === '-' ? undefined : filterConfigType) || undefined,
+  });
+  const { data: configTypes } = useDictItemsByCode('prompt_type');
 
-  const groups = groupsResponse?.data || []
+  const groups = groupsResponse?.data || [];
 
-  const createGroup = useCreatePromptConfigGroup()
-  const updateGroup = useUpdatePromptConfigGroup()
+  const createGroup = useCreatePromptConfigGroup();
+  const updateGroup = useUpdatePromptConfigGroup();
 
   const handleAddGroup = () => {
-    setGroupDialogType('add')
-    setCurrentGroup(null)
-    setGroupDialogOpen(true)
-  }
+    setGroupDialogType('add');
+    setCurrentGroup(null);
+    setGroupDialogOpen(true);
+  };
 
   const handleEditGroup = (group: PromptConfigGroup) => {
-    setGroupDialogType('edit')
-    setCurrentGroup(group)
-    setGroupDialogOpen(true)
-  }
+    setGroupDialogType('edit');
+    setCurrentGroup(group);
+    setGroupDialogOpen(true);
+  };
 
   const handleManageOptions = (group: PromptConfigGroup) => {
-    setSelectedGroupForOptions(group)
-    setOptionsSheetOpen(true)
-  }
+    setSelectedGroupForOptions(group);
+    setOptionsSheetOpen(true);
+  };
 
   const handleGroupSubmit = async (data: Partial<PromptConfigGroup>) => {
     try {
       if (groupDialogType === 'add') {
-        await createGroup.mutateAsync(data)
-        toast.success('配置组创建成功')
+        await createGroup.mutateAsync(data);
+        toast.success('配置组创建成功');
       } else if (currentGroup) {
-        await updateGroup.mutateAsync({ ...data, id: currentGroup.id })
-        toast.success('配置组更新成功')
+        await updateGroup.mutateAsync({ ...data, id: currentGroup.id });
+        toast.success('配置组更新成功');
       }
-      setGroupDialogOpen(false)
+      setGroupDialogOpen(false);
     } catch (error) {
-      toast.error('操作失败')
-      console.error(error)
+      toast.error('操作失败');
+      console.error(error);
     }
-  }
+  };
 
   return (
     <div className="space-y-4">
@@ -90,6 +89,23 @@ export default function PromptConfigPage() {
       <Card>
         <CardHeader>
           <CardTitle>配置组列表</CardTitle>
+          <div className="flex gap-4 mt-4">
+            <Select value={filterConfigType} onValueChange={setFilterConfigType}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="按类型筛选" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="-">
+                  全部类型
+                </SelectItem>
+                {configTypes?.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -97,6 +113,7 @@ export default function PromptConfigPage() {
               <TableRow>
                 <TableHead>名称</TableHead>
                 <TableHead>Key</TableHead>
+                <TableHead>类型</TableHead>
                 <TableHead>输入类型</TableHead>
                 <TableHead>排序</TableHead>
                 <TableHead>状态</TableHead>
@@ -106,13 +123,13 @@ export default function PromptConfigPage() {
             <TableBody>
               {groupsLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
               ) : groups.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     暂无配置组
                   </TableCell>
                 </TableRow>
@@ -120,13 +137,14 @@ export default function PromptConfigPage() {
                 groups.map((group) => (
                   <TableRow key={group.id}>
                     <TableCell className="font-medium">{group.group_name}</TableCell>
-                    <TableCell><Badge variant="outline">{group.group_key}</Badge></TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{group.group_key}</Badge>
+                    </TableCell>
+                    <TableCell>{group.config_type ? <Badge variant="secondary">{configTypes?.find((t) => t.value === group.config_type)?.label || group.config_type}</Badge> : '-'}</TableCell>
                     <TableCell>{group.input_type}</TableCell>
                     <TableCell>{group.sort_order}</TableCell>
                     <TableCell>
-                      <Badge variant={group.is_active ? 'default' : 'secondary'}>
-                        {group.is_active ? '启用' : '禁用'}
-                      </Badge>
+                      <Badge variant={group.is_active ? 'default' : 'secondary'}>{group.is_active ? '启用' : '禁用'}</Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
@@ -155,125 +173,117 @@ export default function PromptConfigPage() {
         isSubmitting={createGroup.isPending || updateGroup.isPending}
       />
 
-      {selectedGroupForOptions && (
-        <OptionsSheet
-          open={optionsSheetOpen}
-          onOpenChange={setOptionsSheetOpen}
-          group={selectedGroupForOptions}
-        />
-      )}
+      {selectedGroupForOptions && <OptionsSheet open={optionsSheetOpen} onOpenChange={setOptionsSheetOpen} group={selectedGroupForOptions} />}
     </div>
-  )
+  );
 }
 
 // --- Group Dialog ---
 
 interface GroupDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  type: 'add' | 'edit'
-  initialData: PromptConfigGroup | null
-  onSubmit: (data: Partial<PromptConfigGroup>) => void
-  isSubmitting: boolean
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  type: 'add' | 'edit';
+  initialData: PromptConfigGroup | null;
+  onSubmit: (data: Partial<PromptConfigGroup>) => void;
+  isSubmitting: boolean;
 }
 
-function GroupDialog({
-  open,
-  onOpenChange,
-  type,
-  initialData,
-  onSubmit,
-  isSubmitting,
-}: GroupDialogProps) {
+function GroupDialog({ open, onOpenChange, type, initialData, onSubmit, isSubmitting }: GroupDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{type === 'add' ? '新建配置组' : '编辑配置组'}</DialogTitle>
-          <DialogDescription>
-            配置组定义了一组相关的提示词选项。
-          </DialogDescription>
+          <DialogDescription>配置组定义了一组相关的提示词选项。</DialogDescription>
         </DialogHeader>
-        <GroupForm
-          key={initialData?.id || 'new'}
-          initialData={initialData}
-          type={type}
-          onSubmit={onSubmit}
-          isSubmitting={isSubmitting}
-          onCancel={() => onOpenChange(false)}
-        />
+        <GroupForm key={initialData?.id || 'new'} initialData={initialData} type={type} onSubmit={onSubmit} isSubmitting={isSubmitting} onCancel={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 interface GroupFormProps {
-  initialData: PromptConfigGroup | null
-  type: 'add' | 'edit'
-  onSubmit: (data: Partial<PromptConfigGroup>) => void
-  isSubmitting: boolean
-  onCancel: () => void
+  initialData: PromptConfigGroup | null;
+  type: 'add' | 'edit';
+  onSubmit: (data: Partial<PromptConfigGroup>) => void;
+  isSubmitting: boolean;
+  onCancel: () => void;
 }
 
 function GroupForm({ initialData, type, onSubmit, isSubmitting, onCancel }: GroupFormProps) {
+  const { data: configTypes } = useDictItemsByCode('prompt_type');
   const [formData, setFormData] = useState<Partial<PromptConfigGroup>>(
     initialData || {
       group_name: '',
       group_key: '',
       description: '',
+      config_type: '',
       input_type: 'select',
       is_multiple: false,
       is_required: false,
       sort_order: 0,
       is_active: true,
-    }
-  )
+    },
+  );
 
   // 根据输入类型判断是否支持多选
-  const supportsMultiple = formData.input_type === 'select' || formData.input_type === 'checkbox'
+  const supportsMultiple = formData.input_type === 'select' || formData.input_type === 'checkbox';
   // checkbox 类型强制多选
-  const isCheckbox = formData.input_type === 'checkbox'
+  const isCheckbox = formData.input_type === 'checkbox';
 
   // 当输入类型变化时，自动调整 is_multiple
   const handleInputTypeChange = (val: string) => {
-    const newData: Partial<PromptConfigGroup> = { ...formData, input_type: val }
+    const newData: Partial<PromptConfigGroup> = { ...formData, input_type: val };
     if (val === 'checkbox') {
-      newData.is_multiple = true
+      newData.is_multiple = true;
     } else if (val !== 'select') {
-      newData.is_multiple = false
+      newData.is_multiple = false;
     }
-    setFormData(newData)
-  }
+    setFormData(newData);
+  };
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData) }} className="space-y-4">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit(formData);
+      }}
+      className="space-y-4"
+    >
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>名称</Label>
-          <Input
-            value={formData.group_name}
-            onChange={(e) => setFormData({ ...formData, group_name: e.target.value })}
-            required
-          />
+          <Input value={formData.group_name} onChange={(e) => setFormData({ ...formData, group_name: e.target.value })} required />
         </div>
         <div className="space-y-2">
           <Label>Key</Label>
-          <Input
-            value={formData.group_key}
-            onChange={(e) => setFormData({ ...formData, group_key: e.target.value })}
-            required
-            disabled={type === 'edit'}
-          />
+          <Input value={formData.group_key} onChange={(e) => setFormData({ ...formData, group_key: e.target.value })} required disabled={type === 'edit'} />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
+          <Label>配置类型</Label>
+          <Select value={formData.config_type || ''} onValueChange={(val) => setFormData({ ...formData, config_type: val || undefined })}>
+            <SelectTrigger>
+              <SelectValue placeholder="选择配置类型" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="-">
+                无
+              </SelectItem>
+              {configTypes?.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
           <Label>输入类型</Label>
-          <Select
-            value={formData.input_type}
-            onValueChange={handleInputTypeChange}
-          >
+          <Select value={formData.input_type} onValueChange={handleInputTypeChange}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -287,107 +297,85 @@ function GroupForm({ initialData, type, onSubmit, isSubmitting, onCancel }: Grou
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-2">
-          <Label>排序</Label>
-          <Input
-            type="number"
-            value={formData.sort_order}
-            onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })}
-          />
-        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>排序</Label>
+        <Input type="number" value={formData.sort_order} onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })} />
       </div>
 
       <div className="space-y-2">
         <Label>描述</Label>
-        <Input
-          value={formData.description || ''}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-        />
+        <Input value={formData.description || ''} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
       </div>
 
       <div className="flex gap-6 pt-2">
         <div className="flex items-center gap-2">
-          <Switch
-            checked={formData.is_active}
-            onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-          />
+          <Switch checked={formData.is_active} onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })} />
           <Label>启用</Label>
         </div>
         {supportsMultiple && (
           <div className="flex items-center gap-2">
-            <Switch
-              checked={formData.is_multiple}
-              onCheckedChange={(checked) => setFormData({ ...formData, is_multiple: checked })}
-              disabled={isCheckbox}
-            />
-            <Label className={isCheckbox ? 'text-muted-foreground' : ''}>
-              多选{isCheckbox ? '（多选框默认多选）' : ''}
-            </Label>
+            <Switch checked={formData.is_multiple} onCheckedChange={(checked) => setFormData({ ...formData, is_multiple: checked })} disabled={isCheckbox} />
+            <Label className={isCheckbox ? 'text-muted-foreground' : ''}>多选{isCheckbox ? '（多选框默认多选）' : ''}</Label>
           </div>
         )}
         <div className="flex items-center gap-2">
-          <Switch
-            checked={formData.is_required}
-            onCheckedChange={(checked) => setFormData({ ...formData, is_required: checked })}
-          />
+          <Switch checked={formData.is_required} onCheckedChange={(checked) => setFormData({ ...formData, is_required: checked })} />
           <Label>必填</Label>
         </div>
       </div>
 
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={onCancel}>取消</Button>
-        <Button type="submit" disabled={isSubmitting}>保存</Button>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          取消
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
+          保存
+        </Button>
       </DialogFooter>
     </form>
-  )
+  );
 }
 
 // --- Options Sheet ---
 
-function OptionsSheet({
-  open,
-  onOpenChange,
-  group,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  group: PromptConfigGroup
-}) {
-  const { data: optionsResponse, isLoading } = usePromptConfigOptions(group.id)
+function OptionsSheet({ open, onOpenChange, group }: { open: boolean; onOpenChange: (open: boolean) => void; group: PromptConfigGroup }) {
+  const { data: optionsResponse, isLoading } = usePromptConfigOptions(group.id);
 
-  const options = optionsResponse || []
+  const options = optionsResponse || [];
 
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingOption, setEditingOption] = useState<PromptConfigOption | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingOption, setEditingOption] = useState<PromptConfigOption | null>(null);
 
-  const createOption = useCreatePromptConfigOption()
-  const updateOption = useUpdatePromptConfigOption()
+  const createOption = useCreatePromptConfigOption();
+  const updateOption = useUpdatePromptConfigOption();
 
   const handleAdd = () => {
-    setEditingOption(null)
-    setDialogOpen(true)
-  }
+    setEditingOption(null);
+    setDialogOpen(true);
+  };
 
   const handleEdit = (opt: PromptConfigOption) => {
-    setEditingOption(opt)
-    setDialogOpen(true)
-  }
+    setEditingOption(opt);
+    setDialogOpen(true);
+  };
 
   const handleSubmit = async (data: Partial<PromptConfigOption>) => {
     try {
       if (editingOption) {
-        await updateOption.mutateAsync({ ...data, id: editingOption.id, group_id: group.id })
-        toast.success('选项更新成功')
+        await updateOption.mutateAsync({ ...data, id: editingOption.id, group_id: group.id });
+        toast.success('选项更新成功');
       } else {
-        await createOption.mutateAsync({ ...data, group_id: group.id })
-        toast.success('选项创建成功')
+        await createOption.mutateAsync({ ...data, group_id: group.id });
+        toast.success('选项创建成功');
       }
-      setDialogOpen(false)
+      setDialogOpen(false);
     } catch (e) {
-      toast.error('操作失败')
-      console.error(e)
+      toast.error('操作失败');
+      console.error(e);
     }
-  }
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -417,9 +405,17 @@ function OptionsSheet({
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={4} className="text-center">加载中...</TableCell></TableRow>
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center">
+                      加载中...
+                    </TableCell>
+                  </TableRow>
                 ) : options.length === 0 ? (
-                  <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">暂无选项</TableCell></TableRow>
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                      暂无选项
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   options.map((opt: PromptConfigOption) => (
                     <TableRow key={opt.id}>
@@ -444,26 +440,20 @@ function OptionsSheet({
           </div>
         </div>
 
-        <OptionDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          initialData={editingOption}
-          onSubmit={handleSubmit}
-          isSubmitting={createOption.isPending || updateOption.isPending}
-        />
+        <OptionDialog open={dialogOpen} onOpenChange={setDialogOpen} initialData={editingOption} onSubmit={handleSubmit} isSubmitting={createOption.isPending || updateOption.isPending} />
       </SheetContent>
     </Sheet>
-  )
+  );
 }
 
 // --- Option Dialog ---
 
 interface OptionDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  initialData: PromptConfigOption | null
-  onSubmit: (data: Partial<PromptConfigOption>) => void
-  isSubmitting: boolean
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialData: PromptConfigOption | null;
+  onSubmit: (data: Partial<PromptConfigOption>) => void;
+  isSubmitting: boolean;
 }
 
 function OptionDialog({ open, onOpenChange, initialData, onSubmit, isSubmitting }: OptionDialogProps) {
@@ -473,23 +463,17 @@ function OptionDialog({ open, onOpenChange, initialData, onSubmit, isSubmitting 
         <DialogHeader>
           <DialogTitle>{initialData ? '编辑选项' : '新建选项'}</DialogTitle>
         </DialogHeader>
-        <OptionForm
-          key={initialData?.id || 'new'}
-          initialData={initialData}
-          onSubmit={onSubmit}
-          isSubmitting={isSubmitting}
-          onCancel={() => onOpenChange(false)}
-        />
+        <OptionForm key={initialData?.id || 'new'} initialData={initialData} onSubmit={onSubmit} isSubmitting={isSubmitting} onCancel={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 interface OptionFormProps {
-  initialData: PromptConfigOption | null
-  onSubmit: (data: Partial<PromptConfigOption>) => void
-  isSubmitting: boolean
-  onCancel: () => void
+  initialData: PromptConfigOption | null;
+  onSubmit: (data: Partial<PromptConfigOption>) => void;
+  isSubmitting: boolean;
+  onCancel: () => void;
 }
 
 function OptionForm({ initialData, onSubmit, isSubmitting, onCancel }: OptionFormProps) {
@@ -502,65 +486,48 @@ function OptionForm({ initialData, onSubmit, isSubmitting, onCancel }: OptionFor
       sort_order: 0,
       is_active: true,
       is_default: false,
-      prompt_order: 2
-    }
-  )
+      prompt_order: 2,
+    },
+  );
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData) }} className="space-y-4">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit(formData);
+      }}
+      className="space-y-4"
+    >
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>选项名称</Label>
-          <Input
-            value={formData.option_label}
-            onChange={(e) => setFormData({ ...formData, option_label: e.target.value })}
-            required
-          />
+          <Input value={formData.option_label} onChange={(e) => setFormData({ ...formData, option_label: e.target.value })} required />
         </div>
         <div className="space-y-2">
           <Label>Key</Label>
-          <Input
-            value={formData.option_key}
-            onChange={(e) => setFormData({ ...formData, option_key: e.target.value })}
-            required
-            disabled={!!initialData}
-          />
+          <Input value={formData.option_key} onChange={(e) => setFormData({ ...formData, option_key: e.target.value })} required disabled={!!initialData} />
         </div>
       </div>
 
       <div className="space-y-2">
         <Label>Prompt Text (正向提示词)</Label>
-        <Input
-          value={formData.prompt_text || ''}
-          onChange={(e) => setFormData({ ...formData, prompt_text: e.target.value })}
-        />
+        <Input value={formData.prompt_text || ''} onChange={(e) => setFormData({ ...formData, prompt_text: e.target.value })} />
       </div>
 
       <div className="space-y-2">
         <Label>Negative Prompt (负向提示词)</Label>
-        <Input
-          value={formData.negative_prompt || ''}
-          onChange={(e) => setFormData({ ...formData, negative_prompt: e.target.value })}
-        />
+        <Input value={formData.negative_prompt || ''} onChange={(e) => setFormData({ ...formData, negative_prompt: e.target.value })} />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>排序权重</Label>
-          <Input
-            type="number"
-            value={formData.sort_order}
-            onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })}
-          />
+          <Input type="number" value={formData.sort_order} onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })} />
         </div>
         <div className="space-y-2">
           <Label>图片URL (可选)</Label>
           <div className="flex gap-2">
-            <Input
-              value={formData.image_url || ''}
-              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-              placeholder="https://..."
-            />
+            <Input value={formData.image_url || ''} onChange={(e) => setFormData({ ...formData, image_url: e.target.value })} placeholder="https://..." />
             {formData.image_url && (
               <div className="h-10 w-10 border rounded flex items-center justify-center bg-gray-50">
                 <ImageIcon className="h-4 w-4 text-muted-foreground" />
@@ -572,25 +539,23 @@ function OptionForm({ initialData, onSubmit, isSubmitting, onCancel }: OptionFor
 
       <div className="flex gap-6 pt-2">
         <div className="flex items-center gap-2">
-          <Switch
-            checked={formData.is_active}
-            onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-          />
+          <Switch checked={formData.is_active} onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })} />
           <Label>启用</Label>
         </div>
         <div className="flex items-center gap-2">
-          <Switch
-            checked={formData.is_default}
-            onCheckedChange={(checked) => setFormData({ ...formData, is_default: checked })}
-          />
+          <Switch checked={formData.is_default} onCheckedChange={(checked) => setFormData({ ...formData, is_default: checked })} />
           <Label>默认选中</Label>
         </div>
       </div>
 
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={onCancel}>取消</Button>
-        <Button type="submit" disabled={isSubmitting}>保存</Button>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          取消
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
+          保存
+        </Button>
       </DialogFooter>
     </form>
-  )
+  );
 }

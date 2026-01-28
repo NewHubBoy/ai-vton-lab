@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from './query-keys'
-import { baseApi, userApi, roleApi, menuApi, apiManagementApi, deptApi, auditLogApi, promptConfigApi, imageTaskApi, modelPhotoApi, rechargeApi, customerApi } from './index'
+import { baseApi, userApi, roleApi, menuApi, apiManagementApi, deptApi, auditLogApi, promptConfigApi, imageTaskApi, modelPhotoApi, rechargeApi, customerApi, dictApi } from './index'
 import { usePathname } from 'next/navigation'
 
 // ============ Base Hooks ============
@@ -328,7 +328,7 @@ export function useAuditLogs(params?: Parameters<typeof auditLogApi.getList>[0])
 
 // ============ Prompt Config Hooks ============
 
-export function usePromptConfigGroups(params?: { is_active?: boolean }) {
+export function usePromptConfigGroups(params?: { is_active?: boolean, config_type?: string }) {
   return useQuery({
     queryKey: queryKeys.promptConfigGroups(params),
     queryFn: () => promptConfigApi.getGroups(params),
@@ -617,6 +617,105 @@ export function useAddCustomerCredits() {
     mutationFn: customerApi.addCredits,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] })
+    },
+  })
+}
+
+// ============ Dict Hooks ============
+
+export function useDicts(params?: Parameters<typeof dictApi.getDicts>[0]) {
+  return useQuery({
+    queryKey: queryKeys.dicts(params as object),
+    queryFn: () => dictApi.getDicts(params),
+  })
+}
+
+export function useDict(id: number) {
+  return useQuery({
+    queryKey: queryKeys.dict(id),
+    queryFn: () => dictApi.getDict(id),
+    enabled: !!id,
+  })
+}
+
+export function useCreateDict() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: dictApi.createDict,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dicts'] })
+    },
+  })
+}
+
+export function useUpdateDict() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: dictApi.updateDict,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dicts'] })
+    },
+  })
+}
+
+export function useDeleteDict() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => dictApi.deleteDict(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dicts'] })
+    },
+  })
+}
+
+export function useDictItems(dictId: number, params?: { page?: number; page_size?: number }) {
+  return useQuery({
+    queryKey: queryKeys.dictItems(dictId, params),
+    queryFn: () => dictApi.getItems(dictId, params),
+    enabled: !!dictId,
+  })
+}
+
+export function useDictItemsByCode(code: string) {
+  return useQuery({
+    queryKey: queryKeys.dictItemsByCode(code),
+    queryFn: () => dictApi.getItemsByCode(code),
+    enabled: !!code,
+  })
+}
+
+export function useCreateDictItem() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: dictApi.createItem,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['dictItems', variables.dict_id] })
+    },
+  })
+}
+
+export function useUpdateDictItem() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: dictApi.updateItem,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dictItems'] })
+    },
+  })
+}
+
+export function useDeleteDictItem() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => dictApi.deleteItem(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dictItems'] })
     },
   })
 }

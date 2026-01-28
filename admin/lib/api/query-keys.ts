@@ -50,4 +50,10 @@ export const queryKeys = {
   // Customer
   customers: (params?: object) => ['customers', params] as const,
   customer: (id: number) => ['customer', id] as const,
+
+  // Dict
+  dicts: (params?: object) => ['dicts', params] as const,
+  dict: (id: number) => ['dict', id] as const,
+  dictItems: (dictId: number, params?: object) => ['dictItems', dictId, params] as const,
+  dictItemsByCode: (code: string) => ['dictItemsByCode', code] as const,
 }
