@@ -126,7 +126,7 @@ export function HistoryPanel() {
         </button>
       </div>
 
-      <div className="relative h-[calc(100vh-121px)]">
+      <div className="relative h-[calc(100vh-201px)]">
         {/* Top fade gradient */}
         <div className="absolute top-0 left-0 right-0 h-6 bg-linear-to-b from-white dark:from-zinc-900 to-transparent z-10 pointer-events-none" />
 

@@ -49,16 +49,14 @@ export function GarmentSelector({ className }: GarmentSelectorProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1 }}
+      transition={{ delay: 0.05, duration: 0.3 }}
       className={cn('space-y-2', className)}
     >
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          Garment
-        </h3>
-      </div>
+      <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-300 tracking-wide">
+        服装图片
+      </label>
 
       <AnimatePresence mode="wait">
         {garmentImage ? (
@@ -67,25 +65,25 @@ export function GarmentSelector({ className }: GarmentSelectorProps) {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="relative group aspect-3/4 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800"
+            className="relative group aspect-[3/4] rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-800"
           >
             <img
               src={garmentImage.preview}
-              alt="Garment preview"
+              alt="服装预览"
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="px-3 py-1.5 bg-white text-zinc-900 rounded-lg text-xs font-medium hover:bg-zinc-100 transition-colors"
+                className="px-4 py-2 bg-white text-zinc-900 rounded-xl text-sm font-medium hover:bg-zinc-100 transition-colors"
               >
-                Replace
+                更换图片
               </button>
               <button
                 onClick={clearSingleGarmentImage}
-                className="p-1.5 bg-white/90 rounded-lg hover:bg-white transition-colors"
+                className="p-2 bg-white/90 rounded-xl hover:bg-white transition-colors"
               >
-                <X className="w-3.5 h-3.5 text-zinc-700" />
+                <X className="w-4 h-4 text-zinc-700" />
               </button>
             </div>
             <input
@@ -105,12 +103,19 @@ export function GarmentSelector({ className }: GarmentSelectorProps) {
             onClick={() => fileInputRef.current?.click()}
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
-            className="aspect-3/4 rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 hover:border-violet-400 dark:hover:border-violet-500 cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 bg-zinc-50 dark:bg-zinc-800/50"
+            className="aspect-[3/4] rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 cursor-pointer transition-colors flex flex-col items-center justify-center gap-3 bg-zinc-50 dark:bg-zinc-800/50"
           >
-            <Shirt className="w-5 h-5 text-zinc-400" />
-            <p className="text-xs text-zinc-500">
-              Drag & drop or click to browse
-            </p>
+            <div className="p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800">
+              <Shirt className="w-6 h-6 text-zinc-400" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                上传服装图片
+              </p>
+              <p className="text-xs text-zinc-400 mt-1">
+                拖拽或点击上传
+              </p>
+            </div>
             <input
               ref={fileInputRef}
               type="file"

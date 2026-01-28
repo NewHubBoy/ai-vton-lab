@@ -5,13 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Download,
   RefreshCw,
-  Shirt,
+  UserRound,
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
 import { useTryOnStore } from '@/lib/store';
 
-export function ResultCanvas() {
+export function ModelGenCanvas() {
   const { resultImage, isGenerating, error, setResultImage } = useTryOnStore();
   const [isLoading, setIsLoading] = useState(true);
 
@@ -19,7 +19,7 @@ export function ResultCanvas() {
     if (!resultImage) return;
     const link = document.createElement('a');
     link.href = resultImage;
-    link.download = 'ai-tryon-result.png';
+    link.download = 'ai-model-result.png';
     link.click();
   }, [resultImage]);
 
@@ -33,15 +33,15 @@ export function ResultCanvas() {
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="p-4 rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-700 mb-4"
+          className="p-4 rounded-2xl bg-gradient-to-br from-violet-100 to-fuchsia-100 dark:from-violet-900/30 dark:to-fuchsia-900/30 mb-4"
         >
-          <Shirt className="w-8 h-8 text-zinc-500 dark:text-zinc-400" />
+          <UserRound className="w-8 h-8 text-violet-600 dark:text-violet-400" />
         </motion.div>
         <h3 className="text-base font-semibold text-zinc-800 dark:text-zinc-200">
-          等待生成结果
+          等待生成模特
         </h3>
         <p className="text-sm text-zinc-500 mt-2 max-w-xs leading-relaxed">
-          在左侧上传模特和服装图片，然后点击「开始换装」按钮
+          在左侧选择模特的性别、年龄、肤色等参数，然后点击「生成模特」按钮
         </p>
       </div>
     );
@@ -63,20 +63,20 @@ export function ResultCanvas() {
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                className="w-16 h-16 rounded-full border-4 border-zinc-200 dark:border-zinc-700 border-t-zinc-900 dark:border-t-white"
+                className="w-16 h-16 rounded-full border-4 border-violet-200 dark:border-violet-800 border-t-violet-600 dark:border-t-violet-400"
               />
               <motion.div
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
                 className="absolute inset-0 flex items-center justify-center"
               >
-                <Shirt className="w-6 h-6 text-zinc-600 dark:text-zinc-400" />
+                <UserRound className="w-6 h-6 text-violet-600 dark:text-violet-400" />
               </motion.div>
             </div>
             <p className="mt-4 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-              正在生成换装效果...
+              正在生成模特...
             </p>
-            <p className="mt-1 text-xs text-zinc-400">AI 正在处理中，请稍候</p>
+            <p className="mt-1 text-xs text-zinc-400">AI 正在创作中，请稍候</p>
           </motion.div>
         )}
 
@@ -116,7 +116,7 @@ export function ResultCanvas() {
             <div className="absolute inset-0 p-4">
               <img
                 src={resultImage}
-                alt="AI 换装结果"
+                alt="AI 生成的模特"
                 className="w-full h-full object-contain rounded-xl"
                 onLoad={() => setIsLoading(false)}
               />
