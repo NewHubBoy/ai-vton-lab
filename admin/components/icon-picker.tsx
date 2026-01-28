@@ -169,7 +169,7 @@ export function IconPicker({ value, onChange, placeholder = '选择图标', clas
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[320px] p-0" align="start">
+      <PopoverContent className="w-[320px] p-0" align="start" onWheel={(e) => e.stopPropagation()}>
         <div className="p-2 border-b">
           <Input placeholder="搜索图标..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-8" />
         </div>
