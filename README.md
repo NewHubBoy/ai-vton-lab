@@ -20,7 +20,7 @@ ai-vton-lab/
 │   │   └── schemas/      # Pydantic 模式
 │   │       └── image_task.py     # 图像生成请求/响应模式
 │   └── run.py            # 启动入口
-├── client/               # Vue 3 前端
+├── client/               # Nextjs 前端
 └── docs/                 # 文档
 ```
 
@@ -34,7 +34,7 @@ ai-vton-lab/
 
 ### 前端
 - **框架**: Next.js 16.1.3
-- **UI**: Vue 3 + Tailwind CSS
+- **UI**: Shadcn + Tailwind CSS
 - **状态管理**: Zustand
 
 ## 图像生成功能

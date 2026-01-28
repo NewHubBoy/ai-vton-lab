@@ -83,9 +83,10 @@ export const userApi = {
 export interface Role {
   id: number
   name: string
-  code: string
-  description?: string
-  is_active: boolean
+  updated_at: string
+  desc?: string
+  is_deleted: boolean
+  created_at: string
 }
 
 export interface RoleListParams {
@@ -93,11 +94,6 @@ export interface RoleListParams {
   page_size?: number
   name?: string
   code?: string
-}
-
-export interface RoleListResponse {
-  data: Role[]
-  total: number
 }
 
 export interface RoleAuthorized {
@@ -109,7 +105,7 @@ export interface RoleAuthorized {
 export const roleApi = {
   // 获取角色列表
   getList: (params?: RoleListParams) =>
-    apiClient.getPaginated<RoleListResponse>('/role/list', params),
+    apiClient.getPaginated<Role>('/role/list', params),
 
   // 创建角色
   create: (data: Partial<Role>) =>

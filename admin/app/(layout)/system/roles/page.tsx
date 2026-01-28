@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useRoles, useCreateRole, useUpdateRole, useDeleteRole } from '@/lib/api/hooks';
+import type { Role } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -18,7 +19,7 @@ export default function RolesPage() {
   const [pageSize] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'add' | 'edit'>('add');
-  const [formData, setFormData] = useState({ name: '', code: '', description: '' });
+  const [formData, setFormData] = useState({ name: '', description: '' });
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const { data: rolesData, isLoading } = useRoles({
@@ -33,24 +34,24 @@ export default function RolesPage() {
 
   const handleAdd = () => {
     setDialogType('add');
-    setFormData({ name: '', code: '', description: '' });
+    setFormData({ name: '', description: '' });
     setDialogOpen(true);
   };
 
-  const handleEdit = (role: { id: number; name: string; code: string; description?: string }) => {
+  const handleEdit = (role: Role) => {
     setDialogType('edit');
     setEditingId(role.id);
-    setFormData({ name: role.name, code: role.code, description: role.description || '' });
+    setFormData({ name: role.name, description: role.desc || '' });
     setDialogOpen(true);
   };
 
   const handleSubmit = async () => {
     try {
       if (dialogType === 'add') {
-        await createRole.mutateAsync(formData as any);
+        await createRole.mutateAsync(formData as Partial<Role>);
         toast.success('创建成功');
       } else {
-        await updateRole.mutateAsync({ ...formData, role_id: editingId! } as any);
+        await updateRole.mutateAsync({ ...formData, role_id: editingId! } as Partial<Role> & { role_id: number });
         toast.success('更新成功');
       }
       setDialogOpen(false);
@@ -69,7 +70,7 @@ export default function RolesPage() {
     }
   };
 
-  const response = rolesData as { data?: any[]; total?: number } | undefined;
+  const response = rolesData as { data?: Role[]; total?: number } | undefined;
   const roles = response?.data || [];
   const total = response?.total || 0;
 
@@ -99,7 +100,7 @@ export default function RolesPage() {
                 <TableHead>角色名称</TableHead>
                 <TableHead>角色ID</TableHead>
                 <TableHead>描述</TableHead>
-                <TableHead>状态</TableHead>
+                {/* <TableHead>状态</TableHead> */}
                 <TableHead>操作</TableHead>
               </TableRow>
             </TableHeader>
@@ -124,9 +125,9 @@ export default function RolesPage() {
                       <Badge variant="outline">{role.id}</Badge>
                     </TableCell>
                     <TableCell>{role.desc || '-'}</TableCell>
-                    <TableCell>
-                      <Badge variant={role.is_active ? 'destructive' : 'default'}>{role.is_active ? '被删除' : '正常'}</Badge>
-                    </TableCell>
+                    {/* <TableCell>
+                      <Badge variant={role.is_deleted ? 'default' : 'destructive'}>{role.is_deleted ? '正常' : '已禁用'}</Badge>
+                    </TableCell> */}
                     <TableCell>
                       <div className="flex gap-2">
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(role)}>
@@ -166,10 +167,6 @@ export default function RolesPage() {
             <div className="grid gap-2">
               <Label htmlFor="name">角色名称</Label>
               <Input id="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="code">角色编码</Label>
-              <Input id="code" value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="description">描述</Label>
