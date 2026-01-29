@@ -14,13 +14,12 @@ The project is divided into several distinct applications:
 | :--- | :--- | :--- | :--- |
 | **`admin/`** | Frontend | Next.js 16 (App Router), React 19, Tailwind v4, Shadcn/ui | Modern Admin Dashboard. |
 | **`client/`** | Frontend | Next.js 16 (App Router), React 19, Tailwind v4, Zustand | Main user-facing client application (replaces the Vue 3 mention in README). |
-| **`frontend/`** | Frontend | Next.js 16 (App Router), React 19, Tailwind v4, Headless UI | Alternative or legacy frontend application. |
 | **`backend/`** | Backend | FastAPI, Tortoise ORM, MySQL/SQLite | Core API service. |
 | **`backend/web/`** | Frontend | Vue 3, Vite, Naive UI | Legacy or backend-bundled Admin UI (likely the "Vue 3" app mentioned in root README). |
 
 ## Key Technologies
 
-### Frontend Common Stack (admin, client, frontend)
+### Frontend Common Stack (admin, client)
 - **Framework:** Next.js 16+ (App Router)
 - **Language:** TypeScript
 - **UI Lib:** React 19

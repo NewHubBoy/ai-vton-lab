@@ -1,41 +1,50 @@
 # AI VTON Lab
 
-基于 FastAPI + Vue 3 的全栈 AI 虚拟试穿与图像生成平台。
+基于 Google GenAI 的 AI 虚拟试穿与图像生成平台。
+
+## 功能特性
+
+- 🎨 **AI 图像生成** - 基于 Google Gemini 模型的智能图像生成
+- 👗 **虚拟试穿** - AI 驱动的服装试穿体验
+- ⚡ **实时推送** - WebSocket 实时任务状态更新
+- 💰 **Batch API** - 支持批量生成，50% 成本优惠
+- 🔐 **RBAC 权限** - 完整的用户角色权限管理
 
 ## 项目结构
 
 ```
 ai-vton-lab/
-├── backend/               # FastAPI 后端
+├── admin/                 # 管理后台 (Next.js 16 + React 19)
+├── backend/               # API 服务 (FastAPI + Tortoise-ORM)
 │   ├── app/
 │   │   ├── api/v1/       # API 路由
-│   │   │   ├── images/   # 图像生成 API
-│   │   │   └── ws.py     # WebSocket 路由
-│   │   ├── core/         # 核心模块
-│   │   │   ├── image_client.py   # Google Gen SDK 客户端
-│   │   │   ├── image_worker.py   # 后台任务 Worker
-│   │   │   └── ws_manager.py     # WebSocket 连接管理
+│   │   ├── core/         # 核心模块 (image_client, worker, ws_manager)
 │   │   ├── models/       # 数据模型
-│   │   │   └── image_task.py     # 图像生成任务模型
 │   │   └── schemas/      # Pydantic 模式
-│   │       └── image_task.py     # 图像生成请求/响应模式
 │   └── run.py            # 启动入口
-├── client/               # Nextjs 前端
-└── docs/                 # 文档
+├── client/                # AI 试穿客户端 (Next.js 16 + Zustand)
+└── docs/                  # 项目文档
 ```
 
 ## 技术栈
 
-### 后端
-- **框架**: FastAPI 0.111.0
-- **ORM**: Tortoise-ORM 0.23.0
+| 项目 | 技术 | 说明 |
+|------|------|------|
+| **admin** | Next.js 16 + React 19 + TanStack Query | 管理后台 |
+| **backend** | FastAPI 0.111 + Tortoise-ORM + Google GenAI | API 服务 |
+| **client** | Next.js 16 + React 19 + Zustand | AI 试穿客户端 |
+
+### 后端依赖
+- **框架**: FastAPI 0.111
+- **ORM**: Tortoise-ORM + Aerich 迁移
 - **数据库**: MySQL / SQLite
 - **认证**: JWT + RBAC
+- **AI**: Google GenAI SDK
 
-### 前端
-- **框架**: Next.js 16.1.3
-- **UI**: Shadcn + Tailwind CSS
-- **状态管理**: Zustand
+### 前端依赖
+- **框架**: Next.js 16.1.3 + React 19
+- **UI**: Shadcn/ui + Tailwind CSS
+- **状态管理**: Zustand (client) / TanStack Query (admin)
 
 ## 图像生成功能
 
@@ -177,6 +186,12 @@ make upgrade
 
 ## 文档
 
-- [简单异步方案](fastapi_image_async_simple_plan.md)
-- [WebSocket 实时推送方案](fastapi_image_async_ws_plan.md)
-- [原 PostgreSQL 方案](fastapi_google_image_async_plan.md)
+- [简单异步方案](docs/fastapi_image_async_simple_plan.md)
+- [WebSocket 实时推送方案](docs/fastapi_image_async_ws_plan.md)
+- [Google GenAI 异步方案](docs/fastapi_google_image_async_plan.md)
+- [UI 需求文档](docs/ai_try_on_ui_requirements_v1.1.md)
+- [项目计划](docs/ProjectPlan.md)
+
+## License
+
+MIT
