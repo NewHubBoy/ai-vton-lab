@@ -5,9 +5,24 @@ import { useTryOnStore } from '@/lib/store';
 import { imageApi } from '@/lib/api';
 import { useWebSocket } from './useWebSocket';
 import type { TaskType } from '@/lib/api/types';
+import type { ImageFile } from '@/lib/store/types';
 
 const POLL_INTERVAL = 2000; // 轮询间隔 2 秒
 const MAX_POLL_ATTEMPTS = 60; // 最大轮询次数（2分钟）
+
+/**
+ * 上传图片到 OSS
+ */
+async function uploadImageToOss(image: ImageFile | null): Promise<string | null> {
+    if (!image?.file) return null;
+    try {
+        const result = await imageApi.uploadImage(image.file, 'tryon');
+        return result.url;
+    } catch (error) {
+        console.error('上传图片失败:', error);
+        throw error;
+    }
+}
 
 interface UseGenerationOptions {
     taskType?: TaskType;
@@ -94,16 +109,21 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
         clearPolling();
 
         try {
-            // 收集图片（转为 base64 或 URL）
+            // 先上传图片到 OSS，获取可访问的 URL
             const referenceImages: string[] = [];
 
-            // 这里简化处理：实际项目中需要将 File 转为 base64 或上传获取 URL
-            // 暂时使用 preview URL（blob URL，后端可能不支持）
-            if (modelImage?.preview) {
-                referenceImages.push(modelImage.preview);
+            if (modelImage) {
+                const modelUrl = await uploadImageToOss(modelImage);
+                if (modelUrl) referenceImages.push(modelUrl);
             }
-            if (garmentImage?.preview) {
-                referenceImages.push(garmentImage.preview);
+
+            if (garmentImage) {
+                const garmentUrl = await uploadImageToOss(garmentImage);
+                if (garmentUrl) referenceImages.push(garmentUrl);
+            }
+
+            if (referenceImages.length === 0) {
+                throw new Error('图片上传失败，请重试');
             }
 
             // 将 dynamicConfigs 转换为 selected_configs 格式
@@ -167,9 +187,11 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
     useEffect(() => {
         const unsubscribe = onTaskUpdate((msg) => {
             if (msg.status === 'succeeded' && msg.result) {
-                const result = msg.result as { images?: { url?: string }[] };
-                if (result.images?.[0]?.url) {
-                    setResultImage(result.images[0].url);
+                const result = msg.result as { images?: { oss_url?: string; url?: string }[] };
+                // 优先使用 oss_url，其次是 url
+                const imageUrl = result.images?.[0]?.oss_url || result.images?.[0]?.url;
+                if (imageUrl) {
+                    setResultImage(imageUrl);
                 }
                 setIsGenerating(false);
             } else if (msg.status === 'failed') {

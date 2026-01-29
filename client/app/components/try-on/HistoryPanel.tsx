@@ -37,7 +37,8 @@ function formatTime(dateStr: string): string {
 
 function HistoryCard({ task }: { task: ImageTaskDetail }) {
   const [open, setOpen] = useState(false);
-  const thumbnail = task.result?.images?.[0]?.url || 'https://via.placeholder.com/200x300?text=No+Image';
+  // 优先使用 oss_url，其次是 url
+  const thumbnail = task.result?.images?.[0]?.oss_url || task.result?.images?.[0]?.url || 'https://via.placeholder.com/200x300?text=No+Image';
   const time = formatTime(task.created_at);
 
   return (
@@ -101,8 +102,10 @@ function HistoryCard({ task }: { task: ImageTaskDetail }) {
 export function HistoryPanel() {
   const { tasks, isLoading, error, refresh, hasMore, loadMore } = useTaskHistory({ limit: 20 });
 
-  // 过滤只显示完成的任务
-  const completedTasks = tasks.filter(t => t.status === 'succeeded' && t.result?.images?.[0]?.url);
+  // 过滤只显示完成的任务（有成功结果的）
+  const completedTasks = tasks.filter(t =>
+    t.status === 'succeeded' && t.result?.images?.[0]?.oss_url
+  );
 
   return (
     <motion.div

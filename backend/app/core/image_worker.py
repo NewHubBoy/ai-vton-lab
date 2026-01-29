@@ -16,12 +16,12 @@
 import asyncio
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
 from app.models.image_task import ImageTask
-from app.models.model_photo import ModelImage
+from app.models.model_photo import ModelPhoto, ModelImage
 from app.core.ws_manager import ws_manager
 from app.core.image_client import generate_image
 from app.settings.config import settings
@@ -136,21 +136,27 @@ async def process_single_task(task: ImageTask) -> bool:
     Returns:
         是否处理成功
     """
+    print(f"[ImageWorker] Processing task: {task.id}, user_id: {task.user_id}")
+    print(f"[ImageWorker] Current WS connections: {list(ws_manager.connections.keys())}")
+
     # 更新为 running
     task.status = "running"
-    task.started_at = datetime.utcnow()
+    task.started_at = datetime.now(timezone.utc)
     await task.save()
 
-    # WebSocket 推送：开始处理
-    await ws_manager.push_task_update(
+    # WebSocket 推送：开始处理（通过 user_id 直接推送）
+    push_result = await ws_manager.push_task_update(
+        user_id=task.user_id,
         task_id=task.id,
         status="running",
     )
+    print(f"[ImageWorker] WS push running result: {push_result}")
 
     # 调用生成（支持重试）
     last_error = None
     for attempt in range(CONFIG["retry_times"]):
         try:
+            print(f"[ImageWorker] Attempt {attempt + 1}/{CONFIG['retry_times']} for task {task.id}")
             result = generate_image(
                 prompt=task.prompt,
                 reference_images=task.reference_images,
@@ -159,12 +165,43 @@ async def process_single_task(task: ImageTask) -> bool:
                 output_filename=f"task_{task.id}",
                 verbose=False,
             )
+            print(f"[ImageWorker] generate_image result: {result.get('status')}, error: {result.get('error')}")
 
             if result["status"] == "success":
+                # 计算耗时
+                generation_time = None
+                finished_time = datetime.now(timezone.utc)
+                if task.started_at:
+                    started_time = task.started_at
+                    if started_time.tzinfo is None:
+                        started_time = started_time.replace(tzinfo=timezone.utc)
+                    generation_time = (finished_time - started_time).total_seconds()
+
+                # 创建 ModelPhoto 记录
+                model_photo = await ModelPhoto.create(
+                    user_id=task.user_id,
+                    task_id=task.id,
+                    generation_type=task.task_type,
+                    selected_options=task.selected_configs,
+                    custom_prompts={"user_prompt": task.user_prompt} if task.user_prompt else {},
+                    final_prompt=task.prompt,
+                    final_negative_prompt=task.negative_prompt,
+                    reference_images=task.reference_images,
+                    aspect_ratio=task.aspect_ratio,
+                    resolution=task.resolution,
+                    status="completed",
+                    progress=100,
+                    image_count=len(result.get("generated_images", [])),
+                    started_at=task.started_at,
+                    finished_at=finished_time,
+                    generation_time=generation_time,
+                )
+                print(f"[ImageWorker] Created ModelPhoto record: {model_photo.id}")
+
                 # 上传生成的图片到 OSS
                 uploaded_images = []
                 for local_path in result.get("generated_images", []):
-                    upload_result = await upload_image_to_oss(local_path, task.user_id, None)
+                    upload_result = await upload_image_to_oss(local_path, task.user_id, model_photo.id)
                     if upload_result:
                         uploaded_images.append(upload_result)
                     else:
@@ -181,11 +218,12 @@ async def process_single_task(task: ImageTask) -> bool:
                 task.result_json = {
                     "images": uploaded_images
                 }
-                task.finished_at = datetime.utcnow()
+                task.finished_at = finished_time
                 await task.save()
 
                 # WebSocket 推送：成功
                 await ws_manager.push_task_update(
+                    user_id=task.user_id,
                     task_id=task.id,
                     status="succeeded",
                     result=task.result_json,
@@ -203,14 +241,48 @@ async def process_single_task(task: ImageTask) -> bool:
             await asyncio.sleep(CONFIG["retry_delay"])
 
     # 失败：更新错误信息
+    finished_time = datetime.now(timezone.utc)
     task.status = "failed"
     task.error_code = "GENERATION_FAILED"
     task.error_message = last_error or "Max retries exceeded"
-    task.finished_at = datetime.utcnow()
+    task.finished_at = finished_time
     await task.save()
+
+    # 创建失败的 ModelPhoto 记录
+    try:
+        generation_time = None
+        if task.started_at:
+            started_time = task.started_at
+            if started_time.tzinfo is None:
+                started_time = started_time.replace(tzinfo=timezone.utc)
+            generation_time = (finished_time - started_time).total_seconds()
+
+        await ModelPhoto.create(
+            user_id=task.user_id,
+            task_id=task.id,
+            generation_type=task.task_type,
+            selected_options=task.selected_configs,
+            custom_prompts={"user_prompt": task.user_prompt} if task.user_prompt else {},
+            final_prompt=task.prompt,
+            final_negative_prompt=task.negative_prompt,
+            reference_images=task.reference_images,
+            aspect_ratio=task.aspect_ratio,
+            resolution=task.resolution,
+            status="failed",
+            progress=0,
+            error_code=task.error_code,
+            error_message=task.error_message,
+            started_at=task.started_at,
+            finished_at=finished_time,
+            generation_time=generation_time,
+        )
+        print(f"[ImageWorker] Created failed ModelPhoto record for task: {task.id}")
+    except Exception as e:
+        print(f"[ImageWorker] Failed to create ModelPhoto record: {e}")
 
     # WebSocket 推送：失败
     await ws_manager.push_task_update(
+        user_id=task.user_id,
         task_id=task.id,
         status="failed",
         error={"code": task.error_code, "message": task.error_message},

@@ -398,12 +398,16 @@ export interface ImageTask {
   task_id: string
   user_id: string
   username?: string
+  task_type?: string
   status: 'queued' | 'running' | 'succeeded' | 'failed'
   prompt: string
+  user_prompt?: string
+  selected_configs?: Record<string, unknown>
+  negative_prompt?: string
   aspect_ratio: string
   resolution: string
   result?: {
-    images?: string[]
+    images?: Array<{ url?: string; oss_url?: string }>
   }
   error?: {
     code: string
@@ -429,11 +433,11 @@ export interface ImageTaskListResponse {
 export const imageTaskApi = {
   // 获取任务列表（管理员）
   getList: (params?: ImageTaskListParams) =>
-    apiClient.getPaginated<ImageTaskListResponse>('/images/admin/tasks', params),
+    apiClient.get<ImageTaskListResponse>('/images/admin/tasks', params),
 
   // 获取任务详情（管理员）
   getDetail: (params: { task_id: string }) =>
-    apiClient.get<ImageTask>('/images/admin/tasks', params),
+    apiClient.get<ImageTask>(`/images/admin/tasks/${params.task_id}`),
 }
 
 // ============ Model Photo APIs (Tryon Records) ============

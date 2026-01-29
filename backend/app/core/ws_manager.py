@@ -35,9 +35,6 @@ class ConnectionManager:
         # user_id -> WebSocket 连接
         self.connections: Dict[str, WebSocket] = {}
 
-        # task_id -> user_id (用于定向推送)
-        self.task_subscribers: Dict[str, str] = {}
-
         # 心跳任务
         self._heartbeat_task: Optional[asyncio.Task] = None
 
@@ -62,18 +59,9 @@ class ConnectionManager:
     def disconnect(self, user_id: str):
         """
         断开 WebSocket 连接
-
-        可扩展：
-        - 记录断开原因（正常关闭/异常）
-        - 清理订阅关系时通知其他服务
         """
         if user_id in self.connections:
             del self.connections[user_id]
-
-        # 清理该用户的所有订阅
-        tasks_to_remove = [t for t, u in self.task_subscribers.items() if u == user_id]
-        for task_id in tasks_to_remove:
-            del self.task_subscribers[task_id]
 
     async def send_message(self, user_id: str, message: dict) -> bool:
         """
@@ -98,6 +86,7 @@ class ConnectionManager:
 
     async def push_task_update(
         self,
+        user_id: str,
         task_id: str,
         status: str,
         result: Optional[dict] = None,
@@ -105,9 +94,10 @@ class ConnectionManager:
         finished_at: Optional[str] = None,
     ) -> int:
         """
-        推送任务状态更新
+        推送任务状态更新给指定用户
 
         Args:
+            user_id: 用户ID
             task_id: 任务ID
             status: 状态
             result: 成功时的结果
@@ -115,11 +105,10 @@ class ConnectionManager:
             finished_at: 完成时间
 
         Returns:
-            推送成功的用户数
+            推送成功的用户数（0 或 1）
         """
-        user_id = self.task_subscribers.get(task_id)
-        if not user_id:
-            return 0
+        print(f"[WS] push_task_update: user_id={user_id}, task_id={task_id}, status={status}")
+        print(f"[WS] online users: {list(self.connections.keys())}")
 
         message = {
             "type": "task_update",
@@ -137,19 +126,35 @@ class ConnectionManager:
             message["finished_at"] = finished_at
 
         success = await self.send_message(user_id, message)
-        if success:
-            # 成功后清理订阅关系
-            del self.task_subscribers[task_id]
-
+        print(f"[WS] push result: success={success}")
         return 1 if success else 0
+
+    async def push_task_update_by_task(
+        self,
+        task_id: str,
+        status: str,
+        result: Optional[dict] = None,
+        error: Optional[dict] = None,
+        finished_at: Optional[str] = None,
+    ) -> int:
+        """
+        通过 task_id 推送任务状态更新（兼容旧接口，已废弃）
+
+        Args:
+            task_id: 任务ID
+            status: 状态
+            result: 成功时的结果
+            error: 失败时的错误
+            finished_at: 完成时间
+
+        Returns:
+            推送成功的用户数（始终为 0，因为不再维护 task_subscribers）
+        """
+        return 0
 
     async def start_heartbeat(self, interval: int = 30):
         """
         启动心跳任务
-
-        可扩展：
-        - 使用 Redis 存储心跳状态
-        - 配合负载均衡器检测连接健康
         """
         self._heartbeat_task = asyncio.create_task(self._heartbeat_loop(interval))
 
@@ -184,10 +189,9 @@ class ConnectionManager:
         msg_type = data.get("type")
 
         if msg_type == "subscribe":
-            # 订阅任务
+            # 订阅任务（兼容旧客户端，忽略）
             task_id = data.get("task_id")
             if task_id:
-                self.task_subscribers[task_id] = user_id
                 return {"type": "subscribed", "task_id": task_id}
 
         elif msg_type == "heartbeat":

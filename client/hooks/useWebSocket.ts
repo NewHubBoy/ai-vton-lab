@@ -132,11 +132,10 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
         reconnectInterval,
     ]);
 
-    // 订阅任务
-    const subscribe = useCallback((taskId: string) => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({ type: 'subscribe', task_id: taskId }));
-        }
+    // 订阅任务（兼容旧接口，Worker 现在通过 user_id 直接推送）
+    const subscribe = useCallback((_taskId: string) => {
+        // 不再需要订阅，消息会通过 user_id 直接推送
+        // 保留此方法以兼容现有代码
     }, []);
 
     // 注册任务更新回调

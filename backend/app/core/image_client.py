@@ -489,11 +489,13 @@ class ImageClient:
                             image_bytes = response.content
 
                         # 保存到临时文件
-                        temp_path = f"/tmp/reference_{uuid.uuid4().hex[:8]}"
+                        temp_dir = Path("/tmp")
+                        temp_dir.mkdir(parents=True, exist_ok=True)
+                        temp_path = temp_dir / f"reference_{uuid.uuid4().hex[:8]}"
                         mime_type = response.headers.get("content-type", "image/jpeg")
                         ext = ".jpg" if "jpeg" in mime_type or "jpg" in mime_type else \
                               ".png" if "png" in mime_type else ".webp"
-                        temp_file = temp_path + ext
+                        temp_file = temp_path.with_suffix(ext)
                         with open(temp_file, "wb") as f:
                             f.write(image_bytes)
 
@@ -503,7 +505,7 @@ class ImageClient:
 
                         # 清理临时文件
                         try:
-                            os.remove(temp_file)
+                            os.remove(str(temp_file))
                         except:
                             pass
 

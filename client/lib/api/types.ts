@@ -36,6 +36,7 @@ export interface ImageTaskResponse {
  */
 export interface ImageTaskResult {
     url?: string;
+    oss_url?: string;
     width?: number;
     height?: number;
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useImageTasks } from '@/lib/api/hooks'
+import { useImageTasks, useImageTaskDetail } from '@/lib/api/hooks'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -10,8 +10,11 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Search, RefreshCw } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Search, RefreshCw, Eye, Clock, XCircle, AlertCircle, Image as ImageIcon } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
+import type { ImageTask } from '@/lib/api'
 
 function TableSkeleton() {
   return (
@@ -23,10 +26,11 @@ function TableSkeleton() {
           <TableCell><Skeleton className="h-6 w-16 rounded" /></TableCell>
           <TableCell><Skeleton className="h-4 w-48" /></TableCell>
           <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-16" /></TableCell>
           <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-          <TableCell><Skeleton className="h-12 w-12 rounded" /></TableCell>
           <TableCell><Skeleton className="h-4 w-24" /></TableCell>
           <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+          <TableCell><Skeleton className="h-8 w-8 rounded" /></TableCell>
         </TableRow>
       ))}
     </>
@@ -48,6 +52,171 @@ const statusColors: Record<string, string> = {
   failed: 'bg-red-100 text-red-800',
 }
 
+const statusLabels: Record<string, string> = {
+  queued: '排队中',
+  running: '生成中',
+  succeeded: '成功',
+  failed: '失败',
+}
+
+// 任务详情 Dialog
+function TaskDetailDialog({ taskId, open, onOpenChange }: { taskId: string; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const { data: task, isLoading } = useImageTaskDetail(taskId)
+  const taskData = task as ImageTask | undefined
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>任务详情</DialogTitle>
+          <DialogDescription>查看生成任务的详细信息</DialogDescription>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        ) : taskData ? (
+          <div className="space-y-6">
+            {/* 基本信息 */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <span className="text-sm text-muted-foreground">任务ID</span>
+                <p className="text-sm font-mono break-all">{taskData.task_id}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-sm text-muted-foreground">用户</span>
+                <p className="text-sm">{taskData.username || taskData.user_id}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-sm text-muted-foreground">状态</span>
+                <Badge className={statusColors[taskData.status]}>
+                  {statusLabels[taskData.status]}
+                </Badge>
+              </div>
+              <div className="space-y-1">
+                <span className="text-sm text-muted-foreground">任务类型</span>
+                <p className="text-sm">{taskData.task_type || '-'}</p>
+              </div>
+            </div>
+
+            <Tabs defaultValue="prompt" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="prompt">提示词</TabsTrigger>
+                <TabsTrigger value="result">生成结果</TabsTrigger>
+                <TabsTrigger value="params">参数信息</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="prompt" className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <span className="text-sm font-medium">正向提示词</span>
+                  <div className="p-3 bg-muted rounded-lg text-sm">
+                    {taskData.prompt || '-'}
+                  </div>
+                </div>
+                {taskData.user_prompt && (
+                  <div className="space-y-2">
+                    <span className="text-sm font-medium">用户提示词</span>
+                    <div className="p-3 bg-muted rounded-lg text-sm">
+                      {taskData.user_prompt}
+                    </div>
+                  </div>
+                )}
+                {taskData.negative_prompt && (
+                  <div className="space-y-2">
+                    <span className="text-sm font-medium">负向提示词</span>
+                    <div className="p-3 bg-muted rounded-lg text-sm">
+                      {taskData.negative_prompt}
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="result" className="space-y-4 mt-4">
+                {taskData.status === 'succeeded' && taskData.result?.images?.length ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    {taskData.result.images.map((img, idx) => (
+                      <div key={idx} className="space-y-2">
+                        <img
+                          src={img.oss_url || img.url}
+                          alt={`生成结果 ${idx + 1}`}
+                          className="w-full rounded-lg border"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : taskData.status === 'failed' ? (
+                  <div className="p-4 bg-red-50 rounded-lg">
+                    <div className="flex items-center gap-2 text-red-600">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="font-medium">生成失败</span>
+                    </div>
+                    {taskData.error && (
+                      <p className="text-sm text-red-500 mt-2">{taskData.error.message}</p>
+                    )}
+                  </div>
+                ) : taskData.status === 'running' ? (
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <div className="flex items-center gap-2 text-blue-600">
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      <span>生成中...</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-muted rounded-lg text-center text-muted-foreground">
+                    暂无生成结果
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="params" className="space-y-4 mt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <span className="text-sm text-muted-foreground">宽高比</span>
+                    <p className="text-sm">{taskData.aspect_ratio}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-sm text-muted-foreground">分辨率</span>
+                    <p className="text-sm">{taskData.resolution}</p>
+                  </div>
+                </div>
+                {taskData.selected_configs && Object.keys(taskData.selected_configs).length > 0 && (
+                  <div className="space-y-2">
+                    <span className="text-sm font-medium">选配置</span>
+                    <pre className="p-3 bg-muted rounded-lg text-xs overflow-x-auto">
+                      {JSON.stringify(taskData.selected_configs, null, 2)}
+                    </pre>
+                  </div>
+                )}
+                <div className="grid grid-cols-3 gap-4 pt-4 border-t">
+                  <div className="space-y-1">
+                    <span className="text-sm text-muted-foreground">创建时间</span>
+                    <p className="text-sm">{formatDateTime(taskData.created_at)}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-sm text-muted-foreground">开始时间</span>
+                    <p className="text-sm">{taskData.started_at ? formatDateTime(taskData.started_at) : '-'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-sm text-muted-foreground">完成时间</span>
+                    <p className="text-sm">{taskData.finished_at ? formatDateTime(taskData.finished_at) : '-'}</p>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            任务不存在
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export default function ImageTasksPage() {
   const [offset, setOffset] = useState(0)
   const [limit] = useState(10)
@@ -55,6 +224,8 @@ export default function ImageTasksPage() {
     status: 'all',
     user_id: '',
   })
+  const [detailTaskId, setDetailTaskId] = useState<string | null>(null)
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false)
 
   const { data: tasksData, isLoading } = useImageTasks({
     limit,
@@ -63,8 +234,8 @@ export default function ImageTasksPage() {
     user_id: filters.user_id || undefined,
   })
 
-  const response = tasksData as { data?: any[]; total?: number } | undefined
-  const tasks = response?.data || []
+  const response = tasksData as { tasks?: ImageTask[]; total?: number } | undefined
+  const tasks = response?.tasks || []
   const total = response?.total || 0
 
   const handleSearch = () => {
@@ -76,6 +247,11 @@ export default function ImageTasksPage() {
       status: 'all',
       user_id: '',
     })
+  }
+
+  const handleViewDetail = (taskId: string) => {
+    setDetailTaskId(taskId)
+    setDetailDialogOpen(true)
   }
 
   return (
@@ -138,6 +314,7 @@ export default function ImageTasksPage() {
                 <TableHead className="w-20 text-center">结果</TableHead>
                 <TableHead className="w-32">创建时间</TableHead>
                 <TableHead className="w-32">完成时间</TableHead>
+                <TableHead className="w-12">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -145,7 +322,7 @@ export default function ImageTasksPage() {
                 <TableSkeleton />
               ) : tasks.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">暂无数据</TableCell>
+                  <TableCell colSpan={10} className="text-center py-10 text-muted-foreground">暂无数据</TableCell>
                 </TableRow>
               ) : (
                 tasks.map((task) => (
@@ -159,11 +336,8 @@ export default function ImageTasksPage() {
                       <span className="text-sm">{task.username || task.user_id}</span>
                     </TableCell>
                     <TableCell>
-                      <Badge className={statusColors[task.status] || 'bg-gray-100'}>
-                        {task.status === 'queued' && '排队中'}
-                        {task.status === 'running' && '生成中'}
-                        {task.status === 'succeeded' && '成功'}
-                        {task.status === 'failed' && '失败'}
+                      <Badge className={statusColors[task.status]}>
+                        {statusLabels[task.status]}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -178,21 +352,17 @@ export default function ImageTasksPage() {
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button variant="ghost" size="icon">
-                              <img
-                                src={task.result.images[0]?.oss_url}
-                                alt="result"
-                                className="h-10 w-10 object-cover rounded"
-                              />
+                              <ImageIcon className="h-4 w-4" />
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-[400px]">
                             <div className="space-y-2">
                               <h4 className="font-medium">生成结果</h4>
                               <div className="grid grid-cols-2 gap-2">
-                                {task.result.images.map((img: { oss_url: string }, idx: number) => (
+                                {task.result.images.map((img, idx) => (
                                   <img
                                     key={idx}
-                                    src={img.oss_url}
+                                    src={img.oss_url || img.url}
                                     alt={`result-${idx}`}
                                     className="w-full rounded border"
                                   />
@@ -202,11 +372,11 @@ export default function ImageTasksPage() {
                           </PopoverContent>
                         </Popover>
                       ) : task.status === 'failed' ? (
-                        <span className="text-xs text-red-500">失败</span>
+                        <XCircle className="h-4 w-4 text-red-500 mx-auto" />
                       ) : task.status === 'running' ? (
-                        <span className="text-xs text-blue-500">生成中...</span>
+                        <RefreshCw className="h-4 w-4 text-blue-500 mx-auto animate-spin" />
                       ) : (
-                        <span className="text-xs text-muted-foreground">-</span>
+                        <Clock className="h-4 w-4 text-yellow-500 mx-auto" />
                       )}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
@@ -214,6 +384,16 @@ export default function ImageTasksPage() {
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {task.finished_at ? formatDateTime(task.finished_at) : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleViewDetail(task.task_id)}
+                        title="查看详情"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
@@ -244,6 +424,15 @@ export default function ImageTasksPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* 任务详情 Dialog */}
+      {detailTaskId && (
+        <TaskDetailDialog
+          taskId={detailTaskId}
+          open={detailDialogOpen}
+          onOpenChange={setDetailDialogOpen}
+        />
+      )}
     </div>
   )
 }
