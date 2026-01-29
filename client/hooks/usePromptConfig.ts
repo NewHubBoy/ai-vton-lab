@@ -1,7 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { promptConfigApi, PromptConfigGroupWithOptions } from '@/lib/api/prompt-config';
+import { promptConfigApi, PromptConfigGroupWithOptions, ConfigType } from '@/lib/api/prompt-config';
+
+interface UsePromptConfigOptions {
+    configType?: ConfigType;
+}
 
 interface UsePromptConfigReturn {
     configs: PromptConfigGroupWithOptions[];
@@ -12,8 +16,10 @@ interface UsePromptConfigReturn {
 
 /**
  * 获取 prompt 配置的 hook
+ * @param options.configType 配置类型，用于筛选对应场景的配置
  */
-export function usePromptConfig(): UsePromptConfigReturn {
+export function usePromptConfig(options: UsePromptConfigOptions = {}): UsePromptConfigReturn {
+    const { configType } = options;
     const [configs, setConfigs] = useState<PromptConfigGroupWithOptions[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
@@ -22,7 +28,7 @@ export function usePromptConfig(): UsePromptConfigReturn {
         try {
             setIsLoading(true);
             setError(null);
-            const data = await promptConfigApi.getGroupsWithOptions();
+            const data = await promptConfigApi.getGroupsWithOptions(configType);
             setConfigs(data);
         } catch (err) {
             setError(err instanceof Error ? err : new Error('Failed to fetch configs'));
@@ -33,7 +39,7 @@ export function usePromptConfig(): UsePromptConfigReturn {
 
     useEffect(() => {
         fetchConfigs();
-    }, []);
+    }, [configType]);
 
     return {
         configs,

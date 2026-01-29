@@ -6,7 +6,7 @@ import { Settings2, ChevronDown, Loader2 } from 'lucide-react';
 import { useTryOnStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { usePromptConfig } from '@/hooks/usePromptConfig';
-import { PromptConfigGroupWithOptions, PromptConfigOption } from '@/lib/api/prompt-config';
+import { PromptConfigGroupWithOptions, PromptConfigOption, ConfigType } from '@/lib/api/prompt-config';
 
 // 渲染单选按钮组 - 滑块式 Tab 样式
 function RadioGroup({
@@ -414,7 +414,11 @@ function ConfigGroupRenderer({
   }
 }
 
-export function AdvancedSettings() {
+interface AdvancedSettingsProps {
+  configType?: ConfigType;
+}
+
+export function AdvancedSettings({ configType = 'tryon' }: AdvancedSettingsProps) {
   const {
     advancedSettingsOpen,
     setAdvancedSettingsOpen,
@@ -423,7 +427,7 @@ export function AdvancedSettings() {
     setDynamicConfigs,
   } = useTryOnStore();
 
-  const { configs, isLoading, error } = usePromptConfig();
+  const { configs, isLoading, error } = usePromptConfig({ configType });
 
   // 初始化默认值
   useEffect(() => {

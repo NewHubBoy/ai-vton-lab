@@ -383,6 +383,45 @@ export function useUpdatePromptConfigOption() {
   })
 }
 
+// ============ Prompt Config Settings Hooks ============
+
+export function usePromptConfigSettings(params?: { group_name?: string }) {
+  return useQuery({
+    queryKey: queryKeys.promptConfigSettings(params),
+    queryFn: () => promptConfigApi.getSettings(params),
+  })
+}
+
+export function useCreatePromptConfigSetting() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: promptConfigApi.createSetting,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['promptConfigSettings'] })
+    },
+  })
+}
+
+export function useUpdatePromptConfigSetting() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: promptConfigApi.updateSetting,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['promptConfigSettings'] })
+    },
+  })
+}
+
+export function useDeletePromptConfigSetting() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: promptConfigApi.deleteSetting,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['promptConfigSettings'] })
+    },
+  })
+}
+
 // ============ Image Task Hooks (Admin) ============
 
 export function useImageTasks(params?: Parameters<typeof imageTaskApi.getList>[0]) {

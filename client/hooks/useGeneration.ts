@@ -4,9 +4,14 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useTryOnStore } from '@/lib/store';
 import { imageApi } from '@/lib/api';
 import { useWebSocket } from './useWebSocket';
+import type { TaskType } from '@/lib/api/types';
 
 const POLL_INTERVAL = 2000; // 轮询间隔 2 秒
 const MAX_POLL_ATTEMPTS = 60; // 最大轮询次数（2分钟）
+
+interface UseGenerationOptions {
+    taskType?: TaskType;
+}
 
 interface UseGenerationReturn {
     generate: () => Promise<void>;
@@ -14,12 +19,15 @@ interface UseGenerationReturn {
     wsConnected: boolean;
 }
 
-export function useGeneration(): UseGenerationReturn {
+export function useGeneration(options: UseGenerationOptions = {}): UseGenerationReturn {
+    const { taskType = 'tryon' } = options;
+
     const {
         modelImage,
         garmentImages,
         resolution,
         aspectRatio,
+        dynamicConfigs,
         canGenerate,
         isGenerating,
         setIsGenerating,
@@ -86,13 +94,6 @@ export function useGeneration(): UseGenerationReturn {
         clearPolling();
 
         try {
-            // 构建 prompt
-            const parts: string[] = ['Virtual try-on'];
-            if (garmentImages.top) parts.push('with top garment');
-            if (garmentImages.bottom) parts.push('with bottom garment');
-            if (garmentImages.full) parts.push('with full outfit');
-            const prompt = parts.join(' ');
-
             // 收集图片（转为 base64 或 URL）
             const referenceImages: string[] = [];
 
@@ -111,9 +112,26 @@ export function useGeneration(): UseGenerationReturn {
                 referenceImages.push(garmentImages.full.preview);
             }
 
-            // 创建任务
+            // 将 dynamicConfigs 转换为 selected_configs 格式
+            // dynamicConfigs: { gender: 'male', style: ['casual', 'modern'] }
+            // selected_configs: { gender: ['male'], style: ['casual', 'modern'] }
+            const selectedConfigs: Record<string, string[]> = {};
+            for (const [key, value] of Object.entries(dynamicConfigs)) {
+                if (value === undefined || value === null || value === '') continue;
+                if (typeof value === 'boolean') {
+                    // 布尔值转换为字符串数组
+                    selectedConfigs[key] = [value ? 'true' : 'false'];
+                } else if (Array.isArray(value)) {
+                    selectedConfigs[key] = value;
+                } else {
+                    selectedConfigs[key] = [value];
+                }
+            }
+
+            // 创建任务 - 使用新的请求格式
             const response = await imageApi.createTask({
-                prompt,
+                task_type: taskType,
+                selected_configs: Object.keys(selectedConfigs).length > 0 ? selectedConfigs : undefined,
                 reference_images: referenceImages.length > 0 ? referenceImages : undefined,
                 aspect_ratio: aspectRatio,
                 resolution: resolution,
@@ -137,6 +155,8 @@ export function useGeneration(): UseGenerationReturn {
         canGenerate,
         modelImage,
         garmentImages,
+        dynamicConfigs,
+        taskType,
         resolution,
         aspectRatio,
         isConnected,

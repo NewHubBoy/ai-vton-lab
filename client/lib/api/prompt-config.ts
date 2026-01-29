@@ -2,11 +2,15 @@
 
 import { request } from './client';
 
+// 配置类型：tryon=虚拟试穿, model=模特生成, detail=商品详情
+export type ConfigType = 'tryon' | 'model' | 'detail';
+
 // 配置组类型
 export interface PromptConfigGroup {
     id: number;
     group_key: string;
     group_name: string;
+    config_type?: string | null;
     description?: string | null;
     input_type: 'select' | 'radio' | 'radiobox' | 'checkbox' | 'slider' | 'toggle';
     is_multiple: boolean;
@@ -53,10 +57,20 @@ interface ApiResponse<T> {
 
 /**
  * 获取所有配置组
+ * @param isActive 是否只获取启用的配置
+ * @param configType 配置类型筛选
  */
-export async function getPromptConfigGroups(isActive: boolean = true): Promise<PromptConfigGroup[]> {
+export async function getPromptConfigGroups(
+    isActive: boolean = true,
+    configType?: ConfigType
+): Promise<PromptConfigGroup[]> {
+    const params = new URLSearchParams();
+    params.set('is_active', String(isActive));
+    if (configType) {
+        params.set('config_type', configType);
+    }
     const response = await request<ApiResponse<PromptConfigGroup[]>>(
-        `/api/v1/prompt-config/groups?is_active=${isActive}`
+        `/api/v1/prompt-config/groups?${params.toString()}`
     );
     return response.data;
 }
@@ -73,9 +87,12 @@ export async function getPromptConfigOptions(groupId: number, isActive: boolean 
 
 /**
  * 获取所有配置组及其选项
+ * @param configType 配置类型筛选
  */
-export async function getPromptConfigGroupsWithOptions(): Promise<PromptConfigGroupWithOptions[]> {
-    const groups = await getPromptConfigGroups();
+export async function getPromptConfigGroupsWithOptions(
+    configType?: ConfigType
+): Promise<PromptConfigGroupWithOptions[]> {
+    const groups = await getPromptConfigGroups(true, configType);
 
     const groupsWithOptions = await Promise.all(
         groups.map(async (group) => {

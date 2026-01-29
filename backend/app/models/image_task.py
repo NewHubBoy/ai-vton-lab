@@ -1,6 +1,16 @@
+from enum import Enum
+
 from tortoise import fields
 
 from .base import BaseModel, TimestampMixin
+
+
+class TaskType(str, Enum):
+    """任务类型枚举：tryon=虚拟试穿, model=模特生成, detail=商品详情"""
+
+    TRYON = "tryon"  # 虚拟试穿
+    MODEL = "model"  # 模特生成
+    DETAIL = "detail"  # 商品详情
 
 
 class ImageTask(BaseModel, TimestampMixin):
@@ -22,8 +32,19 @@ class ImageTask(BaseModel, TimestampMixin):
         index=True
     )
 
+    # 任务类型
+    task_type = fields.CharField(
+        max_length=32,
+        default="tryon",
+        description="任务类型: tryon/model/detail",
+        index=True
+    )
+
     # 生成参数
-    prompt = fields.TextField(description="提示词")
+    prompt = fields.TextField(description="提示词（组装后的完整提示词）")
+    user_prompt = fields.TextField(null=True, description="用户原始输入提示词")
+    selected_configs = fields.JSONField(null=True, description="用户选择的配置项 {group_key: [option_key, ...]}")
+    negative_prompt = fields.TextField(null=True, description="负向提示词")
     reference_images = fields.JSONField(null=True, description="参考图片路径列表")
     aspect_ratio = fields.CharField(max_length=8, default="1:1", description="宽高比")
     resolution = fields.CharField(max_length=8, default="1K", description="分辨率")
@@ -47,9 +68,10 @@ class ImageTask(BaseModel, TimestampMixin):
 
     class Meta:
         table = "image_task"
-        # 可扩展：添加索引优化查询
         indexes = [
             ("user_id", "status"),  # 查询用户任务状态
+            ("user_id", "task_type"),  # 按用户和类型查询
+            ("task_type", "status"),  # 按类型和状态统计
         ]
 
     class PydanticMeta:

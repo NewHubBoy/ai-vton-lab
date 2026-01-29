@@ -1,26 +1,68 @@
 from datetime import datetime
-from typing import Any, List, Optional
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
 
+# ============ Enums ============
+
+
+class TaskTypeEnum(str, Enum):
+    """任务类型枚举：tryon=虚拟试穿, model=模特生成, detail=商品详情"""
+
+    TRYON = "tryon"  # 虚拟试穿
+    MODEL = "model"  # 模特生成
+    DETAIL = "detail"  # 商品详情
+
+
 # ============ Request Schemas ============
+
 
 class ImageTaskRequest(BaseModel):
     """
     图像生成请求
 
-    可扩展：
-    - callback_url: Webhook 回调（升级 Celery 后可用）
-    - priority: 任务优先级（升级 Celery 后可用）
+    支持两种模式：
+    1. 新模式：通过 task_type + selected_configs 由后端组装提示词
+    2. 兼容模式：直接传 prompt（向后兼容）
     """
-    prompt: str = Field(..., description="图像描述提示词", min_length=1, max_length=5000)
+
+    # 任务类型（必填）
+    task_type: TaskTypeEnum = Field(
+        default=TaskTypeEnum.TRYON,
+        description="任务类型: tryon/model/detail"
+    )
+
+    # 用户自定义提示词（可选，用于补充描述）
+    user_prompt: Optional[str] = Field(
+        default=None,
+        description="用户自定义提示词",
+        max_length=2000
+    )
+
+    # 用户选择的配置项
+    selected_configs: Optional[Dict[str, List[str]]] = Field(
+        default=None,
+        description="用户选择的配置项 {group_key: [option_key, ...]}"
+    )
+
+    # 参考图片
     reference_images: Optional[List[str]] = Field(
         default=None,
         description="参考图片路径列表"
     )
+
+    # 其他参数
     aspect_ratio: str = Field(default="1:1", description="宽高比")
     resolution: str = Field(default="1K", description="分辨率")
+
+    # 向后兼容：直接提供完整 prompt
+    prompt: Optional[str] = Field(
+        default=None,
+        description="完整提示词（向后兼容，优先使用 selected_configs）",
+        max_length=5000
+    )
 
 
 class BatchImageTaskRequest(BaseModel):
@@ -80,9 +122,14 @@ class BatchTaskResultResponse(BaseModel):
 
 class ImageTaskDetailResponse(BaseModel):
     """任务详情响应（兼容轮询降级）"""
+
     task_id: str = Field(..., description="任务ID")
+    task_type: str = Field(default="general", description="任务类型")
     status: str = Field(..., description="任务状态")
-    prompt: str = Field(..., description="提示词")
+    prompt: str = Field(..., description="提示词（组装后）")
+    user_prompt: Optional[str] = Field(default=None, description="用户原始输入")
+    selected_configs: Optional[Dict[str, List[str]]] = Field(default=None, description="用户选择的配置项")
+    negative_prompt: Optional[str] = Field(default=None, description="负向提示词")
     aspect_ratio: str = Field(default="1:1", description="宽高比")
     resolution: str = Field(default="1K", description="分辨率")
 

@@ -9,22 +9,57 @@ import {
   usePromptConfigOptions,
   useCreatePromptConfigOption,
   useUpdatePromptConfigOption,
+  usePromptConfigSettings,
+  useCreatePromptConfigSetting,
+  useUpdatePromptConfigSetting,
+  useDeletePromptConfigSetting,
   useDictItemsByCode,
 } from '@/lib/api/hooks';
-import { PromptConfigGroup, PromptConfigOption } from '@/lib/api';
+import { PromptConfigGroup, PromptConfigOption, PromptConfigSetting } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Pencil, Settings2, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Pencil, Settings2, Loader2, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function PromptConfigPage() {
+  const [activeTab, setActiveTab] = useState('groups');
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">提示词配置</h1>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="groups">配置组</TabsTrigger>
+          <TabsTrigger value="settings">系统配置</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="groups" className="mt-4">
+          <ConfigGroupsTab />
+        </TabsContent>
+
+        <TabsContent value="settings" className="mt-4">
+          <SystemSettingsTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// ============ 配置组 Tab ============
+
+function ConfigGroupsTab() {
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [groupDialogType, setGroupDialogType] = useState<'add' | 'edit'>('add');
   const [currentGroup, setCurrentGroup] = useState<PromptConfigGroup | null>(null);
@@ -77,27 +112,23 @@ export default function PromptConfigPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">提示词配置</h1>
-        <Button onClick={handleAddGroup}>
-          <Plus className="mr-2 h-4 w-4" />
-          新建配置组
-        </Button>
-      </div>
-
+    <>
       <Card>
         <CardHeader>
-          <CardTitle>配置组列表</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>配置组列表</CardTitle>
+            <Button onClick={handleAddGroup}>
+              <Plus className="mr-2 h-4 w-4" />
+              新建配置组
+            </Button>
+          </div>
           <div className="flex gap-4 mt-4">
             <Select value={filterConfigType} onValueChange={setFilterConfigType}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="按类型筛选" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="-">
-                  全部类型
-                </SelectItem>
+                <SelectItem value="-">全部类型</SelectItem>
                 {configTypes?.map((item) => (
                   <SelectItem key={item.value} value={item.value}>
                     {item.label}
@@ -140,7 +171,15 @@ export default function PromptConfigPage() {
                     <TableCell>
                       <Badge variant="outline">{group.group_key}</Badge>
                     </TableCell>
-                    <TableCell>{group.config_type ? <Badge variant="secondary">{configTypes?.find((t) => t.value === group.config_type)?.label || group.config_type}</Badge> : '-'}</TableCell>
+                    <TableCell>
+                      {group.config_type ? (
+                        <Badge variant="secondary">
+                          {configTypes?.find((t) => t.value === group.config_type)?.label || group.config_type}
+                        </Badge>
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
                     <TableCell>{group.input_type}</TableCell>
                     <TableCell>{group.sort_order}</TableCell>
                     <TableCell>
@@ -174,11 +213,294 @@ export default function PromptConfigPage() {
       />
 
       {selectedGroupForOptions && <OptionsSheet open={optionsSheetOpen} onOpenChange={setOptionsSheetOpen} group={selectedGroupForOptions} />}
-    </div>
+    </>
   );
 }
 
-// --- Group Dialog ---
+// ============ 系统配置 Tab ============
+
+function SystemSettingsTab() {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogType, setDialogType] = useState<'add' | 'edit'>('add');
+  const [currentSetting, setCurrentSetting] = useState<PromptConfigSetting | null>(null);
+  const [filterGroupName, setFilterGroupName] = useState<string>('');
+
+  // 获取所有配置用于提取分组名称
+  const { data: allSettingsResponse } = usePromptConfigSettings({});
+
+  // 获取筛选后的配置
+  const { data: settingsResponse, isLoading } = usePromptConfigSettings({
+    group_name: filterGroupName && filterGroupName !== '-' ? filterGroupName : undefined,
+  });
+
+  const allSettings = allSettingsResponse?.data || [];
+  const settings = settingsResponse?.data || [];
+
+  const createSetting = useCreatePromptConfigSetting();
+  const updateSetting = useUpdatePromptConfigSetting();
+  const deleteSetting = useDeletePromptConfigSetting();
+
+  // 从所有配置中获取分组名称
+  const groupNames = [...new Set(allSettings.map((s) => s.group_name).filter(Boolean))] as string[];
+
+  const handleAdd = () => {
+    setDialogType('add');
+    setCurrentSetting(null);
+    setDialogOpen(true);
+  };
+
+  const handleEdit = (setting: PromptConfigSetting) => {
+    setDialogType('edit');
+    setCurrentSetting(setting);
+    setDialogOpen(true);
+  };
+
+  const handleDelete = async (setting: PromptConfigSetting) => {
+    if (!setting.is_editable) {
+      toast.error('该配置不可删除');
+      return;
+    }
+    if (!confirm(`确定要删除配置 "${setting.key}" 吗？`)) return;
+    try {
+      await deleteSetting.mutateAsync(setting.id);
+      toast.success('删除成功');
+    } catch (e) {
+      toast.error('删除失败');
+      console.error(e);
+    }
+  };
+
+  const handleSubmit = async (data: Partial<PromptConfigSetting>) => {
+    try {
+      if (dialogType === 'add') {
+        await createSetting.mutateAsync(data);
+        toast.success('配置创建成功');
+      } else if (currentSetting) {
+        await updateSetting.mutateAsync({ ...data, id: currentSetting.id });
+        toast.success('配置更新成功');
+      }
+      setDialogOpen(false);
+    } catch (error) {
+      toast.error('操作失败');
+      console.error(error);
+    }
+  };
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>系统配置</CardTitle>
+              <CardDescription className="mt-1">管理基础提示词模板、全局负向提示词等系统级配置</CardDescription>
+            </div>
+            <Button onClick={handleAdd}>
+              <Plus className="mr-2 h-4 w-4" />
+              新建配置
+            </Button>
+          </div>
+          <div className="flex gap-4 mt-4">
+            <Select value={filterGroupName} onValueChange={setFilterGroupName}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="按分组筛选" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="-">全部分组</SelectItem>
+                {groupNames.map((name) => (
+                  <SelectItem key={name} value={name}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[200px]">Key</TableHead>
+                <TableHead>值</TableHead>
+                <TableHead className="w-[100px]">分组</TableHead>
+                <TableHead className="w-[80px]">类型</TableHead>
+                <TableHead className="w-[100px]">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                  </TableCell>
+                </TableRow>
+              ) : settings.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    暂无配置
+                  </TableCell>
+                </TableRow>
+              ) : (
+                settings.map((setting) => (
+                  <TableRow key={setting.id}>
+                    <TableCell>
+                      <div className="font-medium">{setting.key}</div>
+                      {setting.description && <div className="text-xs text-muted-foreground">{setting.description}</div>}
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-[400px] truncate" title={setting.value}>
+                        {setting.value}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {setting.group_name ? <Badge variant="outline">{setting.group_name}</Badge> : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{setting.value_type}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(setting)} disabled={!setting.is_editable}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(setting)} disabled={!setting.is_editable}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <SettingDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        type={dialogType}
+        initialData={currentSetting}
+        onSubmit={handleSubmit}
+        isSubmitting={createSetting.isPending || updateSetting.isPending}
+      />
+    </>
+  );
+}
+
+// ============ Setting Dialog ============
+
+interface SettingDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  type: 'add' | 'edit';
+  initialData: PromptConfigSetting | null;
+  onSubmit: (data: Partial<PromptConfigSetting>) => void;
+  isSubmitting: boolean;
+}
+
+function SettingDialog({ open, onOpenChange, type, initialData, onSubmit, isSubmitting }: SettingDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{type === 'add' ? '新建系统配置' : '编辑系统配置'}</DialogTitle>
+          <DialogDescription>系统配置用于存储基础提示词模板、全局设置等。</DialogDescription>
+        </DialogHeader>
+        <SettingForm key={initialData?.id || 'new'} initialData={initialData} type={type} onSubmit={onSubmit} isSubmitting={isSubmitting} onCancel={() => onOpenChange(false)} />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface SettingFormProps {
+  initialData: PromptConfigSetting | null;
+  type: 'add' | 'edit';
+  onSubmit: (data: Partial<PromptConfigSetting>) => void;
+  isSubmitting: boolean;
+  onCancel: () => void;
+}
+
+function SettingForm({ initialData, type, onSubmit, isSubmitting, onCancel }: SettingFormProps) {
+  const [formData, setFormData] = useState<Partial<PromptConfigSetting>>(
+    initialData || {
+      key: '',
+      value: '',
+      value_type: 'text',
+      description: '',
+      group_name: '',
+      sort_order: 0,
+      is_editable: true,
+    }
+  );
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit(formData);
+      }}
+      className="space-y-4"
+    >
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Key</Label>
+          <Input value={formData.key} onChange={(e) => setFormData({ ...formData, key: e.target.value })} required disabled={type === 'edit'} placeholder="如: base_prompt_tryon" />
+        </div>
+        <div className="space-y-2">
+          <Label>分组名称</Label>
+          <Input value={formData.group_name || ''} onChange={(e) => setFormData({ ...formData, group_name: e.target.value })} placeholder="如: base_prompts" />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>值</Label>
+        <Textarea value={formData.value} onChange={(e) => setFormData({ ...formData, value: e.target.value })} required rows={4} placeholder="配置值..." />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>值类型</Label>
+          <Select value={formData.value_type} onValueChange={(val) => setFormData({ ...formData, value_type: val })}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="text">文本</SelectItem>
+              <SelectItem value="json">JSON</SelectItem>
+              <SelectItem value="list">列表</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>排序</Label>
+          <Input type="number" value={formData.sort_order} onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })} />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>描述</Label>
+        <Input value={formData.description || ''} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="配置说明..." />
+      </div>
+
+      <div className="flex items-center gap-2 pt-2">
+        <Switch checked={formData.is_editable} onCheckedChange={(checked) => setFormData({ ...formData, is_editable: checked })} />
+        <Label>可编辑</Label>
+      </div>
+
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          取消
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
+          保存
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
+// ============ Group Dialog ============
 
 interface GroupDialogProps {
   open: boolean;
@@ -224,15 +546,12 @@ function GroupForm({ initialData, type, onSubmit, isSubmitting, onCancel }: Grou
       is_required: false,
       sort_order: 0,
       is_active: true,
-    },
+    }
   );
 
-  // 根据输入类型判断是否支持多选
   const supportsMultiple = formData.input_type === 'select' || formData.input_type === 'checkbox';
-  // checkbox 类型强制多选
   const isCheckbox = formData.input_type === 'checkbox';
 
-  // 当输入类型变化时，自动调整 is_multiple
   const handleInputTypeChange = (val: string) => {
     const newData: Partial<PromptConfigGroup> = { ...formData, input_type: val };
     if (val === 'checkbox') {
@@ -270,9 +589,7 @@ function GroupForm({ initialData, type, onSubmit, isSubmitting, onCancel }: Grou
               <SelectValue placeholder="选择配置类型" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="-">
-                无
-              </SelectItem>
+              <SelectItem value="-">无</SelectItem>
               {configTypes?.map((item) => (
                 <SelectItem key={item.value} value={item.value}>
                   {item.label}
@@ -338,7 +655,7 @@ function GroupForm({ initialData, type, onSubmit, isSubmitting, onCancel }: Grou
   );
 }
 
-// --- Options Sheet ---
+// ============ Options Sheet ============
 
 function OptionsSheet({ open, onOpenChange, group }: { open: boolean; onOpenChange: (open: boolean) => void; group: PromptConfigGroup }) {
   const { data: optionsResponse, isLoading } = usePromptConfigOptions(group.id);
@@ -446,7 +763,7 @@ function OptionsSheet({ open, onOpenChange, group }: { open: boolean; onOpenChan
   );
 }
 
-// --- Option Dialog ---
+// ============ Option Dialog ============
 
 interface OptionDialogProps {
   open: boolean;
@@ -487,7 +804,7 @@ function OptionForm({ initialData, onSubmit, isSubmitting, onCancel }: OptionFor
       is_active: true,
       is_default: false,
       prompt_order: 2,
-    },
+    }
   );
 
   return (

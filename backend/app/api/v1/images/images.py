@@ -2,11 +2,7 @@
 图像生成 API
 
 提供图像生成任务的创建、查询、列表接口。
-
-可扩展：
-- 限流: 使用 Redis 实现用户级/系统级限流
-- 计费: 集成用户积分/配额系统
-- Webhook: 支持回调 URL 通知
+支持多种任务类型：模特生成、虚拟试穿、服装合成等。
 """
 
 from datetime import datetime
@@ -30,6 +26,7 @@ from app.schemas.image_task import (
     BatchTaskStatusResponse,
     BatchTaskResultResponse,
 )
+from app.services.prompt_assembler import PromptAssembler
 
 router = APIRouter(prefix="")
 
@@ -39,16 +36,38 @@ async def create_image_task(request: ImageTaskRequest, current_user: User = Depe
     """
     创建图像生成任务
 
-    可扩展：
-    - 幂等控制: 使用 Idempotency-Key 避免重复创建
-    - 限流检查: 检查用户并发任务数
-    - 配额检查: 检查用户剩余配额
+    支持两种模式：
+    1. 新模式：通过 task_type + selected_configs 由后端组装提示词
+    2. 兼容模式：直接传 prompt（向后兼容）
     """
+    # 组装提示词
+    final_prompt: str
+    negative_prompt: Optional[str] = None
+
+    if request.selected_configs:
+        # 新模式：后端组装
+        assembler = PromptAssembler(request.task_type.value)
+        result = await assembler.assemble(
+            selected_configs=request.selected_configs,
+            user_prompt=request.user_prompt,
+        )
+        final_prompt = result.positive_prompt
+        negative_prompt = result.negative_prompt
+    elif request.prompt:
+        # 向后兼容：使用前端传来的完整 prompt
+        final_prompt = request.prompt
+    else:
+        raise HTTPException(status_code=400, detail="必须提供 selected_configs 或 prompt")
+
     # 创建任务
     task = ImageTask(
         id=str(uuid.uuid4()),
         user_id=str(current_user.id),
-        prompt=request.prompt,
+        task_type=request.task_type.value,
+        prompt=final_prompt,
+        user_prompt=request.user_prompt,
+        selected_configs=request.selected_configs,
+        negative_prompt=negative_prompt,
         reference_images=request.reference_images,
         aspect_ratio=request.aspect_ratio,
         resolution=request.resolution,
@@ -67,10 +86,6 @@ async def create_image_task(request: ImageTaskRequest, current_user: User = Depe
 async def get_task(task_id: str, current_user: User = Depends(AuthControl.is_authed)):
     """
     查询任务详情
-
-    可扩展：
-    - 结果签名URL: 生成带签名的图片下载URL
-    - 部分结果: 支持只返回进度信息
     """
     task = await ImageTask.get_or_none(id=task_id, user_id=str(current_user.id), is_deleted=False)
     if not task:
@@ -78,8 +93,12 @@ async def get_task(task_id: str, current_user: User = Depends(AuthControl.is_aut
 
     return {
         "task_id": task.id,
+        "task_type": task.task_type,
         "status": task.status,
         "prompt": task.prompt,
+        "user_prompt": task.user_prompt,
+        "selected_configs": task.selected_configs,
+        "negative_prompt": task.negative_prompt,
         "aspect_ratio": task.aspect_ratio,
         "resolution": task.resolution,
         "result": task.result_json,
@@ -95,20 +114,21 @@ async def list_tasks(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     status: Optional[str] = Query(default=None, description="状态筛选"),
+    task_type: Optional[str] = Query(default=None, description="任务类型筛选"),
     current_user: User = Depends(AuthControl.is_authed),
 ):
     """
     获取用户任务列表
 
-    可扩展：
-    - 分页优化: 使用游标分页替代 offset
-    - 排序: 支持按创建时间/状态排序
-    - 搜索: 支持 prompt 关键词搜索
+    支持按状态和任务类型筛选。
     """
     query = ImageTask.filter(user_id=str(current_user.id), is_deleted=False)
 
     if status:
         query = query.filter(status=status)
+
+    if task_type:
+        query = query.filter(task_type=task_type)
 
     total = await query.count()
     tasks = await query.order_by("-created_at").offset(offset).limit(limit)
@@ -117,8 +137,12 @@ async def list_tasks(
         "tasks": [
             {
                 "task_id": t.id,
+                "task_type": t.task_type,
                 "status": t.status,
                 "prompt": t.prompt,
+                "user_prompt": t.user_prompt,
+                "selected_configs": t.selected_configs,
+                "negative_prompt": t.negative_prompt,
                 "aspect_ratio": t.aspect_ratio,
                 "resolution": t.resolution,
                 "result": t.result_json,
@@ -253,8 +277,12 @@ class AdminImageTaskResponse(BaseModel):
     task_id: str
     user_id: str
     username: Optional[str] = None
+    task_type: str = "general"
     status: str
     prompt: str
+    user_prompt: Optional[str] = None
+    selected_configs: Optional[dict] = None
+    negative_prompt: Optional[str] = None
     aspect_ratio: str
     resolution: str
     result: Optional[dict] = None
@@ -278,6 +306,7 @@ async def admin_list_tasks(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     status: Optional[str] = Query(default=None, description="状态筛选"),
+    task_type: Optional[str] = Query(default=None, description="任务类型筛选"),
     user_id: Optional[str] = Query(default=None, description="用户ID筛选"),
     current_user: User = Depends(AuthControl.is_authed),
 ):
@@ -285,7 +314,7 @@ async def admin_list_tasks(
     管理员获取所有图像生成任务列表
 
     仅超级用户可访问，返回所有用户的任务记录。
-    支持按状态、用户ID筛选，支持分页。
+    支持按状态、任务类型、用户ID筛选，支持分页。
     """
     # 检查是否为超级用户
     if not current_user.is_superuser:
@@ -295,6 +324,9 @@ async def admin_list_tasks(
 
     if status:
         query = query.filter(status=status)
+
+    if task_type:
+        query = query.filter(task_type=task_type)
 
     if user_id:
         query = query.filter(user_id=user_id)
@@ -316,8 +348,12 @@ async def admin_list_tasks(
                 "task_id": t.id,
                 "user_id": t.user_id,
                 "username": username,
+                "task_type": t.task_type,
                 "status": t.status,
                 "prompt": t.prompt[:100] + "..." if len(t.prompt) > 100 else t.prompt,
+                "user_prompt": t.user_prompt,
+                "selected_configs": t.selected_configs,
+                "negative_prompt": t.negative_prompt,
                 "aspect_ratio": t.aspect_ratio,
                 "resolution": t.resolution,
                 "result": t.result_json,
@@ -364,8 +400,12 @@ async def admin_get_task(
         "task_id": task.id,
         "user_id": task.user_id,
         "username": username,
+        "task_type": task.task_type,
         "status": task.status,
         "prompt": task.prompt,
+        "user_prompt": task.user_prompt,
+        "selected_configs": task.selected_configs,
+        "negative_prompt": task.negative_prompt,
         "aspect_ratio": task.aspect_ratio,
         "resolution": task.resolution,
         "result": task.result_json,

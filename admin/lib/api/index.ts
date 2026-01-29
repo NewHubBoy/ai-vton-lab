@@ -336,6 +336,24 @@ export interface PromptConfigOptionListResponse {
   total: number
 }
 
+export interface PromptConfigSetting {
+  id: number
+  key: string
+  value: string
+  value_type: string
+  description?: string
+  group_name?: string
+  sort_order: number
+  is_editable: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface PromptConfigSettingListResponse {
+  data: PromptConfigSetting[]
+  total: number
+}
+
 export const promptConfigApi = {
   // --- Groups ---
   getGroups: (params?: { is_active?: boolean; config_type?: string }) =>
@@ -356,6 +374,22 @@ export const promptConfigApi = {
 
   updateOption: (data: Partial<PromptConfigOption> & { id: number }) =>
     apiClient.put<PromptConfigOption>(`/prompt-config/options/${data.id}`, data),
+
+  // --- Settings (系统配置) ---
+  getSettings: (params?: { group_name?: string }) =>
+    apiClient.getPaginated<PromptConfigSetting[]>('/prompt-config/settings', params),
+
+  getSettingByKey: (key: string) =>
+    apiClient.get<PromptConfigSetting>(`/prompt-config/settings/${key}`),
+
+  createSetting: (data: Partial<PromptConfigSetting>) =>
+    apiClient.post<PromptConfigSetting>('/prompt-config/settings', data),
+
+  updateSetting: (data: Partial<PromptConfigSetting> & { id: number }) =>
+    apiClient.put<PromptConfigSetting>(`/prompt-config/settings/${data.id}`, data),
+
+  deleteSetting: (id: number) =>
+    apiClient.delete<null>(`/prompt-config/settings/${id}`),
 }
 
 // ============ Image Task APIs (Admin) ============

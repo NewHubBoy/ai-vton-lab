@@ -1,10 +1,11 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.encoders import jsonable_encoder
 
-from app.models.prompt_config import PromptConfigGroup, PromptConfigOption
+from app.models.prompt_config import PromptConfigGroup, PromptConfigOption, PromptConfigSetting
 from app.schemas.prompt_config import (
     PromptConfigGroupCreate, PromptConfigGroupUpdate, PromptConfigGroupResponse,
-    PromptConfigOptionCreate, PromptConfigOptionUpdate, PromptConfigOptionResponse
+    PromptConfigOptionCreate, PromptConfigOptionUpdate, PromptConfigOptionResponse,
+    PromptConfigSettingCreate, PromptConfigSettingResponse
 )
 from app.schemas import Success, SuccessExtra
 
@@ -70,3 +71,62 @@ async def update_option(id: int, data: PromptConfigOptionUpdate):
     await obj.update_from_dict(data.model_dump(exclude_unset=True))
     await obj.save()
     return Success(data=jsonable_encoder(PromptConfigOptionResponse.model_validate(obj).model_dump()))
+
+
+# --- Settings (系统配置) ---
+
+
+@router.get("/settings", summary="获取系统配置列表")
+async def get_settings(group_name: str = None):
+    """获取系统配置列表，可按 group_name 筛选"""
+    query = PromptConfigSetting.filter()
+    if group_name:
+        query = query.filter(group_name=group_name)
+
+    items = await query.order_by("group_name", "sort_order")
+    data = [PromptConfigSettingResponse.model_validate(item).model_dump() for item in items]
+    return SuccessExtra(data=jsonable_encoder(data), total=len(items))
+
+
+@router.get("/settings/{key}", summary="根据 key 获取单个配置")
+async def get_setting_by_key(key: str):
+    """根据 key 获取单个配置"""
+    obj = await PromptConfigSetting.get_or_none(key=key)
+    if not obj:
+        raise HTTPException(status_code=404, detail="配置不存在")
+    return Success(data=jsonable_encoder(PromptConfigSettingResponse.model_validate(obj).model_dump()))
+
+
+@router.post("/settings", summary="创建系统配置")
+async def create_setting(data: PromptConfigSettingCreate):
+    """创建系统配置"""
+    existing = await PromptConfigSetting.get_or_none(key=data.key)
+    if existing:
+        raise HTTPException(status_code=400, detail="配置 key 已存在")
+    obj = await PromptConfigSetting.create(**data.model_dump())
+    return Success(data=jsonable_encoder(PromptConfigSettingResponse.model_validate(obj).model_dump()))
+
+
+@router.put("/settings/{id}", summary="更新系统配置")
+async def update_setting(id: int, data: PromptConfigSettingCreate):
+    """更新系统配置"""
+    obj = await PromptConfigSetting.get_or_none(id=id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="配置不存在")
+    if not obj.is_editable:
+        raise HTTPException(status_code=403, detail="该配置不可编辑")
+    await obj.update_from_dict(data.model_dump(exclude_unset=True))
+    await obj.save()
+    return Success(data=jsonable_encoder(PromptConfigSettingResponse.model_validate(obj).model_dump()))
+
+
+@router.delete("/settings/{id}", summary="删除系统配置")
+async def delete_setting(id: int):
+    """删除系统配置"""
+    obj = await PromptConfigSetting.get_or_none(id=id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="配置不存在")
+    if not obj.is_editable:
+        raise HTTPException(status_code=403, detail="该配置不可删除")
+    await obj.delete()
+    return Success(msg="删除成功")
