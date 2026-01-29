@@ -22,6 +22,8 @@ from typing import Optional, Dict, Any, List
 from enum import Enum
 import uuid
 
+import httpx
+
 try:
     from google import genai
     from google.genai import types
@@ -407,10 +409,30 @@ class ImageClient:
         output_dir.mkdir(parents=True, exist_ok=True)
         return output_dir
 
+    def _upload_file_to_gemini(self, file_path: str) -> Any:
+        """上传文件到 Google GenAI 文件服务
+
+        Args:
+            file_path: 本地文件路径或 URL
+
+        Returns:
+            上传后的文件对象
+        """
+        file_obj = self.client.files.upload(file=file_path)
+        # 等待文件处理完成
+        while file_obj.state.name == "PROCESSING":
+            time.sleep(1)
+            file_obj = self.client.files.get(name=file_obj.name)
+        return file_obj
+
     def _read_image_bytes(self, image_path: str) -> bytes:
-        """读取图片文件字节"""
-        with open(image_path, "rb") as f:
-            return f.read()
+        """读取图片文件字节（支持本地路径）"""
+        path = Path(image_path)
+        if path.exists():
+            with open(image_path, "rb") as f:
+                return f.read()
+        else:
+            raise ValueError(f"Image file not found: {image_path}")
 
     def generate(
         self,
@@ -456,13 +478,51 @@ class ImageClient:
         # 如果有参考图片，添加到内容中
         if reference_images:
             for image_path in reference_images:
-                path = Path(image_path)
-                if not path.exists():
-                    raise ValueError(f"Reference image not found: {image_path}")
+                # 检查是否是 URL（http://, https://, blob://）
+                if image_path.startswith(("http://", "https://", "blob://")):
+                    # 下载图片并上传到 Google 文件服务
+                    try:
+                        # 下载图片字节
+                        with httpx.Client(timeout=30.0) as http_client:
+                            response = http_client.get(image_path)
+                            response.raise_for_status()
+                            image_bytes = response.content
 
-                file_bytes = self._read_image_bytes(str(path))
-                mime_type = get_mime_type(str(path))
-                contents.append(types.Part.from_bytes(data=file_bytes, mime_type=mime_type))
+                        # 保存到临时文件
+                        temp_path = f"/tmp/reference_{uuid.uuid4().hex[:8]}"
+                        mime_type = response.headers.get("content-type", "image/jpeg")
+                        ext = ".jpg" if "jpeg" in mime_type or "jpg" in mime_type else \
+                              ".png" if "png" in mime_type else ".webp"
+                        temp_file = temp_path + ext
+                        with open(temp_file, "wb") as f:
+                            f.write(image_bytes)
+
+                        # 上传到 Google 文件服务
+                        file_obj = self._upload_file_to_gemini(temp_file)
+                        contents.append(file_obj)
+
+                        # 清理临时文件
+                        try:
+                            os.remove(temp_file)
+                        except:
+                            pass
+
+                        if verbose:
+                            print(f"  Uploaded reference image from URL: {image_path[:50]}...")
+                    except Exception as e:
+                        raise ValueError(f"Failed to upload reference image from URL {image_path}: {e}")
+                else:
+                    # 本地文件路径
+                    path = Path(image_path)
+                    if not path.exists():
+                        raise ValueError(f"Reference image not found: {image_path}")
+
+                    # 上传到 Google 文件服务
+                    file_obj = self._upload_file_to_gemini(str(path))
+                    contents.append(file_obj)
+
+                    if verbose:
+                        print(f"  Uploaded reference image: {image_path}")
 
         # 构建配置
         config_args = {
