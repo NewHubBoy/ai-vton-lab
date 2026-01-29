@@ -24,7 +24,7 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
 
     const {
         modelImage,
-        garmentImages,
+        garmentImage,
         resolution,
         aspectRatio,
         dynamicConfigs,
@@ -102,14 +102,8 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
             if (modelImage?.preview) {
                 referenceImages.push(modelImage.preview);
             }
-            if (garmentImages.top?.preview) {
-                referenceImages.push(garmentImages.top.preview);
-            }
-            if (garmentImages.bottom?.preview) {
-                referenceImages.push(garmentImages.bottom.preview);
-            }
-            if (garmentImages.full?.preview) {
-                referenceImages.push(garmentImages.full.preview);
+            if (garmentImage?.preview) {
+                referenceImages.push(garmentImage.preview);
             }
 
             // 将 dynamicConfigs 转换为 selected_configs 格式
@@ -154,7 +148,7 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
     }, [
         canGenerate,
         modelImage,
-        garmentImages,
+        garmentImage,
         dynamicConfigs,
         taskType,
         resolution,

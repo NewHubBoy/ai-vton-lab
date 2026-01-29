@@ -41,10 +41,7 @@ export const createGenerationSlice: StateCreator<
   canGenerate: () => {
     const state = get() as GenerationSlice & ModelSlice & GarmentSlice;
     const hasModel = state.modelImage !== null;
-    const hasGarment =
-      state.garmentImages.top !== null ||
-      state.garmentImages.bottom !== null ||
-      state.garmentImages.full !== null;
+    const hasGarment = state.garmentImage !== null;
     return hasModel && hasGarment && !state.isGenerating;
   },
 });
