@@ -1,86 +1,104 @@
 /**
- * 任务类型枚举：tryon=虚拟试穿, model=模特生成, detail=商品详情
+ * 任务类型枚举
  */
-export type TaskType = 'tryon' | 'model' | 'detail';
+export enum TaskType {
+    TRYON = 'tryon',
+    MODEL = 'model',
+    DETAIL = 'detail',
+}
 
 /**
- * 图像生成任务请求参数
+ * 任务状态枚举
  */
-export interface ImageTaskRequest {
-    // 任务类型
-    task_type?: TaskType;
-    // 用户自定义提示词
-    user_prompt?: string;
-    // 用户选择的配置项 {group_key: [option_key, ...]}
-    selected_configs?: Record<string, string[]>;
-    // 参考图片
-    reference_images?: string[];
-    // 其他参数
-    aspect_ratio?: string;
-    resolution?: string;
-    // 向后兼容：完整提示词
+export enum TaskStatus {
+    QUEUED = 'queued',
+    PROCESSING = 'processing',
+    SUCCEEDED = 'succeeded',
+    FAILED = 'failed',
+}
+
+/**
+ * 试穿参数
+ */
+export interface TaskTryonParams {
+    person_image: string;
+    garment_image: string;
+    category: string;
+    seed?: number;
+    mask_image?: string;
+}
+
+/**
+ * 详情页参数
+ */
+export interface TaskDetailParams {
+    input_image: string;
+    template_id: string;
+    extra_options?: Record<string, any>;
+}
+
+/**
+ * 模特生成参数
+ */
+export interface TaskModelParams {
+    base_model?: string;
+    lora_config?: Record<string, any>;
+    num_inference_steps?: number;
+    guidance_scale?: number;
+}
+
+/**
+ * 创建任务请求
+ */
+export interface CreateTaskRequest {
+    task_type: TaskType;
     prompt?: string;
+    aspect_ratio?: string;
+    quality?: string;
+    platform?: string;
+
+    tryon?: TaskTryonParams;
+    detail?: TaskDetailParams;
+    model?: TaskModelParams;
 }
 
 /**
- * 图像任务创建响应
+ * 任务响应 (通用)
  */
-export interface ImageTaskResponse {
-    task_id: string;
-    status: string;
-    created_at: string;
-}
-
-/**
- * 图像任务结果
- */
-export interface ImageTaskResult {
-    url?: string;
-    oss_url?: string;
-    width?: number;
-    height?: number;
-}
-
-/**
- * 图像任务状态
- */
-export type TaskStatus = 'queued' | 'running' | 'succeeded' | 'failed';
-
-/**
- * 图像任务错误信息
- */
-export interface TaskError {
-    code: string;
-    message: string;
-}
-
-/**
- * 图像任务详情
- */
-export interface ImageTaskDetail {
-    task_id: string;
+export interface GenerationTask {
+    id: string;
+    user_id: string;
+    username?: string;
     task_type: TaskType;
     status: TaskStatus;
-    prompt: string;
-    user_prompt?: string;
-    selected_configs?: Record<string, string[]>;
-    negative_prompt?: string;
-    aspect_ratio: string;
-    resolution: string;
+
+    prompt?: string;
+    aspect_ratio?: string;
+    quality?: string;
+
     result?: {
-        images?: ImageTaskResult[]
+        images?: string[];
+        local_paths?: string[];
     };
-    error?: TaskError;
+    error?: {
+        code: string;
+        message: string;
+    };
+
+    tryon?: TaskTryonParams;
+    detail?: TaskDetailParams;
+    model?: TaskModelParams;
+
     created_at: string;
     started_at?: string;
     finished_at?: string;
 }
 
 /**
- * 图像任务列表响应
+ * 任务列表响应
  */
-export interface ImageTaskListResponse {
-    data: ImageTaskDetail[];
+export interface TaskListResponse {
+    data: GenerationTask[];
     total: number;
     page: number;
     page_size: number;
@@ -92,6 +110,6 @@ export interface ImageTaskListResponse {
 export interface TaskListParams {
     page?: number;
     page_size?: number;
+    task_type?: string;
     status?: string;
-    task_type?: TaskType;
 }

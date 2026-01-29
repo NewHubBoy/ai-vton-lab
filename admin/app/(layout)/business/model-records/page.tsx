@@ -7,11 +7,10 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Search, RefreshCw } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
-import { TaskStatus, TaskType } from '@/lib/api'
+import { TaskStatus, TaskType, GenerationTask } from '@/lib/api'
 
 function TableSkeleton() {
   return (
@@ -21,7 +20,7 @@ function TableSkeleton() {
           <TableCell><Skeleton className="h-4 w-12" /></TableCell>
           <TableCell><Skeleton className="h-4 w-20" /></TableCell>
           <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
           <TableCell><Skeleton className="h-12 w-12 rounded" /></TableCell>
           <TableCell><Skeleton className="h-4 w-24" /></TableCell>
           <TableCell><Skeleton className="h-4 w-24" /></TableCell>
@@ -46,19 +45,19 @@ const statusColors: Record<string, string> = {
   [TaskStatus.FAILED]: 'bg-red-100 text-red-800',
 }
 
-export default function TryonRecordsPage() {
+export default function ModelPhotosPage() {
   const [page, setPage] = useState(1)
   const [pageSize] = useState(10)
   const [filters, setFilters] = useState({
     status: 'all',
   })
 
-  // Correctly using useTasks with TaskType.TRYON
-  const { data: recordsData, isLoading } = useTasks({
+  // Correctly using useTasks with TaskType.MODEL
+  const { data: recordsData, isLoading, refetch } = useTasks({
     page,
     page_size: pageSize,
     status: filters.status === 'all' ? undefined : filters.status,
-    task_type: TaskType.TRYON,
+    task_type: TaskType.MODEL,
   })
 
   const records = recordsData?.data || []
@@ -66,6 +65,7 @@ export default function TryonRecordsPage() {
 
   const handleSearch = () => {
     setPage(1)
+    refetch()
   }
 
   const handleReset = () => {
@@ -73,11 +73,12 @@ export default function TryonRecordsPage() {
       status: 'all',
     })
     setPage(1)
+    setTimeout(() => refetch(), 0)
   }
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">换装合成记录</h1>
+      <h1 className="text-2xl font-bold">模特图生成记录</h1>
 
       <Card>
         <CardHeader>
@@ -132,10 +133,10 @@ export default function TryonRecordsPage() {
                 <TableSkeleton />
               ) : records.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">暂无换装合成记录</TableCell>
+                  <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">暂无模特图生成记录</TableCell>
                 </TableRow>
               ) : (
-                records.map((record) => (
+                records.map((record: GenerationTask) => (
                   <TableRow key={record.id}>
                     <TableCell>
                       <span className="font-mono text-xs">{record.id.slice(0, 8)}...</span>
@@ -154,25 +155,15 @@ export default function TryonRecordsPage() {
                     <TableCell>
                       <div className="max-w-[200px] text-xs text-muted-foreground line-clamp-2">
                         {record.prompt || 'No Prompt'}
+                        {record.model?.base_model && <div className="mt-1">Base: {record.model.base_model}</div>}
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
                       {(record.result?.images?.length ?? 0) > 0 ? (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <img src={record.result?.images?.[0]} alt="preview" className="h-8 w-8 object-cover rounded" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-[300px]">
-                            <img src={record.result?.images?.[0]} alt="Full Preview" className="w-full rounded" />
-                            {record.result?.local_paths && (
-                              <div className="mt-2 text-xs text-muted-foreground break-all">
-                                Local: {record.result.local_paths[0]}
-                              </div>
-                            )}
-                          </PopoverContent>
-                        </Popover>
+                        <div className="relative group w-10 h-10 mx-auto">
+                          <img src={record.result?.images?.[0]} alt="preview" className="w-full h-full object-cover rounded shadow-sm border" />
+                          {/* You can add a full preview modal here if needed */}
+                        </div>
                       ) : (
                         <span className="text-xs text-muted-foreground">-</span>
                       )}

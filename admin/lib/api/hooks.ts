@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from './query-keys'
-import { baseApi, userApi, roleApi, menuApi, apiManagementApi, deptApi, auditLogApi, promptConfigApi, imageTaskApi, modelPhotoApi, rechargeApi, customerApi, dictApi } from './index'
+import { baseApi, userApi, roleApi, menuApi, apiManagementApi, deptApi, auditLogApi, promptConfigApi, tasksApi, templatesApi, rechargeApi, customerApi, dictApi } from './index'
 import { usePathname } from 'next/navigation'
 
 // ============ Base Hooks ============
@@ -422,54 +422,69 @@ export function useDeletePromptConfigSetting() {
   })
 }
 
-// ============ Image Task Hooks (Admin) ============
+// ============ Task Hooks ============
 
-export function useImageTasks(params?: Parameters<typeof imageTaskApi.getList>[0]) {
+export function useTasks(params?: Parameters<typeof tasksApi.getList>[0]) {
   return useQuery({
-    queryKey: queryKeys.imageTasks(params as object),
-    queryFn: () => imageTaskApi.getList(params),
+    queryKey: ['tasks', params],
+    queryFn: () => tasksApi.getList(params),
   })
 }
 
-export function useImageTaskDetail(taskId: string) {
+export function useTaskDetail(id: string) {
   return useQuery({
-    queryKey: queryKeys.imageTaskDetail(taskId),
-    queryFn: () => imageTaskApi.getDetail({ task_id: taskId }),
-    enabled: !!taskId,
-  })
-}
-
-// ============ Model Photo Hooks ============
-
-export function useModelPhotos(params?: Parameters<typeof modelPhotoApi.getList>[0]) {
-  return useQuery({
-    queryKey: queryKeys.modelPhotos(params as object),
-    queryFn: () => modelPhotoApi.getList(params),
-  })
-}
-
-export function useModelPhotoDetail(id: number) {
-  return useQuery({
-    queryKey: queryKeys.modelPhotoDetail(id),
-    queryFn: () => modelPhotoApi.getDetail({ id }),
+    queryKey: ['tasks', id],
+    queryFn: () => tasksApi.getDetail(id),
     enabled: !!id,
   })
 }
 
-// ============ Model Photo Hooks (Tryon Records) ============
-
-export function useModelPhotosTryon(params?: Parameters<typeof modelPhotoApi.getTryonList>[0]) {
-  return useQuery({
-    queryKey: queryKeys.modelPhotosTryon(params as object),
-    queryFn: () => modelPhotoApi.getTryonList(params),
+export function useCreateTask() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: tasksApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+    },
   })
 }
 
-export function useModelPhotoTryonDetail(id: number) {
+// ============ Template Hooks ============
+
+export function useTemplates(params?: { is_active?: boolean, page?: number, page_size?: number }) {
   return useQuery({
-    queryKey: queryKeys.modelPhotoTryonDetail(id),
-    queryFn: () => modelPhotoApi.getTryonDetail({ id }),
-    enabled: !!id,
+    queryKey: ['templates', params],
+    queryFn: () => templatesApi.getList(params),
+  })
+}
+
+export function useCreateTemplate() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: templatesApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['templates'] })
+    },
+  })
+}
+
+export function useUpdateTemplate() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: templatesApi.update,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['templates'] })
+    },
+  })
+}
+
+export function useDeleteTemplate() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => templatesApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['templates'] })
+    },
   })
 }
 

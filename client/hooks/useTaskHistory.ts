@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { imageApi, ImageTaskDetail } from '@/lib/api';
+import { tasksApi, GenerationTask } from '@/lib/api';
 
 interface UseTaskHistoryOptions {
     pageSize?: number;
@@ -9,7 +9,7 @@ interface UseTaskHistoryOptions {
 }
 
 interface UseTaskHistoryReturn {
-    tasks: ImageTaskDetail[];
+    tasks: GenerationTask[];
     total: number;
     isLoading: boolean;
     error: string | null;
@@ -21,7 +21,7 @@ interface UseTaskHistoryReturn {
 export function useTaskHistory(options: UseTaskHistoryOptions = {}): UseTaskHistoryReturn {
     const { pageSize = 20, autoFetch = true } = options;
 
-    const [tasks, setTasks] = useState<ImageTaskDetail[]>([]);
+    const [tasks, setTasks] = useState<GenerationTask[]>([]);
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
@@ -33,8 +33,9 @@ export function useTaskHistory(options: UseTaskHistoryOptions = {}): UseTaskHist
             setError(null);
 
             try {
-                const response = await imageApi.listTasks({ page: newPage, page_size: pageSize });
+                const response = await tasksApi.getList({ page: newPage, page_size: pageSize });
 
+                // response is TaskListResponse { data: GenerationTask[], total: number ... }
                 if (append) {
                     setTasks((prev) => [...prev, ...response.data]);
                 } else {

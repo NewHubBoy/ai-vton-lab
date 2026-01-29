@@ -392,118 +392,123 @@ export const promptConfigApi = {
     apiClient.delete<null>(`/prompt-config/settings/${id}`),
 }
 
-// ============ Image Task APIs (Admin) ============
+// ============ Tasks APIs ============
 
-export interface ImageTask {
-  task_id: string
+export enum TaskType {
+  TRYON = 'tryon',
+  MODEL = 'model',
+  DETAIL = 'detail',
+}
+
+export enum TaskStatus {
+  QUEUED = 'queued',
+  PROCESSING = 'processing',
+  SUCCEEDED = 'succeeded',
+  FAILED = 'failed',
+}
+
+export interface TaskTryonParams {
+  person_image: string
+  garment_image: string
+  category: string
+  seed?: number
+  mask_image?: string
+}
+
+export interface TaskDetailParams {
+  input_image: string
+  template_id: string
+  extra_options?: Record<string, any>
+}
+
+export interface TaskModelParams {
+  base_model?: string
+  lora_config?: Record<string, any>
+  num_inference_steps?: number
+  guidance_scale?: number
+}
+
+export interface GenerationTask {
+  id: string
   user_id: string
   username?: string
-  task_type?: string
-  status: 'queued' | 'running' | 'succeeded' | 'failed'
-  prompt: string
-  user_prompt?: string
-  selected_configs?: Record<string, unknown>
-  negative_prompt?: string
-  aspect_ratio: string
-  resolution: string
+  task_type: TaskType
+  status: TaskStatus
+  prompt?: string
+  aspect_ratio?: string
+  quality?: string
   result?: {
-    images?: Array<{ url?: string; oss_url?: string }>
+    images?: string[]
+    local_paths?: string[]
   }
   error?: {
     code: string
     message: string
   }
+  platform?: string
+  tryon?: TaskTryonParams
+  detail?: TaskDetailParams
+  model?: TaskModelParams
   created_at: string
   started_at?: string
   finished_at?: string
 }
 
-export interface ImageTaskListParams {
+export interface TaskListParams {
   page?: number
   page_size?: number
+  task_type?: string
   status?: string
-  user_id?: string
 }
 
-export interface ImageTaskListResponse {
-  data: ImageTask[]
+export interface TaskListResponse {
+  data: GenerationTask[]
   total: number
   page: number
   page_size: number
 }
 
-export const imageTaskApi = {
-  // 获取任务列表（管理员）
-  getList: (params?: ImageTaskListParams) =>
-    apiClient.getPaginated<ImageTaskListResponse>('/images/admin/tasks', params),
+export const tasksApi = {
+  // Get task list
+  getList: (params?: TaskListParams) =>
+    apiClient.getPaginated<GenerationTask[]>('/tasks/', params),
 
-  // 获取任务详情（管理员）
-  getDetail: (params: { task_id: string }) =>
-    apiClient.get<ImageTask>(`/images/admin/tasks/${params.task_id}`),
+  // Get task detail
+  getDetail: (id: string) =>
+    apiClient.get<GenerationTask>(`/tasks/${id}`),
+
+  // Create task
+  create: (data: any) =>
+    apiClient.post<GenerationTask>('/tasks/generate', data),
 }
 
-// ============ Model Photo APIs (Tryon Records) ============
+// ============ Templates APIs ============
 
-export interface ModelPhoto {
-  id: number
-  user_id: number
-  username?: string
-  task_id?: string
-  batch_id?: string
-  name?: string
-  description?: string
-  generation_type: string
-  generation_params?: Record<string, unknown>
-  selected_options?: Record<string, unknown>
-  custom_prompts?: Record<string, unknown>
-  final_prompt?: string
-  final_negative_prompt?: string
-  prompt_config_snapshot?: Record<string, unknown>
-  reference_images?: string[]
-  aspect_ratio?: string
-  resolution?: string
-  model_version?: string
-  pipeline_version?: string
-  status: string
-  progress: number
-  error_code?: string
-  error_message?: string
-  image_count: number
-  total_size: number
+export interface Template {
+  id: string
+  name: string
+  cover_image?: string
+  config: Record<string, any>
+  is_active: boolean
   created_at: string
-  updated_at: string
-  finished_at?: string
 }
 
-export interface ModelPhotoListParams {
-  page?: number
-  page_size?: number
-  status?: string
-}
+export const templatesApi = {
+  // Get template list
+  getList: (params?: { is_active?: boolean }) =>
+    apiClient.getPaginated<Template[]>('/templates/', params),
 
-export interface ModelPhotoListResponse {
-  data: ModelPhoto[]
-  total: number
-  page: number
-  page_size: number
-}
+  // Create template
+  create: (data: any) =>
+    apiClient.post<Template>('/templates/', data),
 
-export const modelPhotoApi = {
-  // 获取模特记录列表（管理端）
-  getList: (params?: ModelPhotoListParams) =>
-    apiClient.getPaginated<ModelPhotoListResponse>('/model-photo/admin/list', params),
+  // Update template
+  update: (data: Partial<Template> & { id: string }) =>
+    apiClient.put<Template>(`/templates/${data.id}`, data),
 
-  // 获取模特记录详情
-  getDetail: (params: { id: number }) =>
-    apiClient.get<ModelPhoto>('/model-photo', params),
-
-  // 获取换装记录列表（管理端）- 便捷方法
-  getTryonList: (params?: ModelPhotoListParams) =>
-    apiClient.getPaginated<ModelPhotoListResponse>('/model-photo/tryon', params),
-
-  // 获取换装记录详情
-  getTryonDetail: (params: { id: number }) =>
-    apiClient.get<ModelPhoto>('/model-photo/tryon', params),
+  // Delete template
+  delete: (id: string) =>
+    apiClient.delete<null>(`/templates/${id}`),
 }
 
 // ============ Customer APIs ============

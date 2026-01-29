@@ -36,17 +36,13 @@ export const queryKeys = {
   promptConfigOptions: (groupId: number, params?: object) => ['promptConfigOptions', groupId, params] as const,
   promptConfigSettings: (params?: object) => ['promptConfigSettings', params] as const,
 
-  // Image Task (Admin)
-  imageTasks: (params?: object) => ['imageTasks', params] as const,
-  imageTaskDetail: (taskId: string) => ['imageTaskDetail', taskId] as const,
+  // Tasks
+  tasks: (params: Record<string, unknown>) => ['tasks', params],
+  taskDetail: (id: string) => ['tasks', id],
 
-  // Model Photo
-  modelPhotos: (params?: object) => ['modelPhotos', params] as const,
-  modelPhotoDetail: (id: number) => ['modelPhotoDetail', id] as const,
-
-  // Model Photo (Tryon Records)
-  modelPhotosTryon: (params?: object) => ['modelPhotosTryon', params] as const,
-  modelPhotoTryonDetail: (id: number) => ['modelPhotoTryonDetail', id] as const,
+  // Templates
+  templates: (params: Record<string, unknown>) => ['templates', params],
+  templateDetail: (id: string) => ['templates', id],
 
   // Customer
   customers: (params?: object) => ['customers', params] as const,

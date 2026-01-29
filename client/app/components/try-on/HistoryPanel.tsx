@@ -16,7 +16,7 @@ import {
 import { useState } from 'react';
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useTaskHistory } from '@/hooks/useTaskHistory';
-import { ImageTaskDetail } from '@/lib/api';
+import { GenerationTask, TaskStatus } from '@/lib/api';
 
 // 格式化时间
 function formatTime(dateStr: string): string {
@@ -35,10 +35,10 @@ function formatTime(dateStr: string): string {
   return `${diffDays}d ago`;
 }
 
-function HistoryCard({ task }: { task: ImageTaskDetail }) {
+function HistoryCard({ task }: { task: GenerationTask }) {
   const [open, setOpen] = useState(false);
-  // 优先使用 oss_url，其次是 url
-  const thumbnail = task.result?.images?.[0]?.oss_url || task.result?.images?.[0]?.url || 'https://via.placeholder.com/200x300?text=No+Image';
+  // task.result.images is string[]
+  const thumbnail = task.result?.images?.[0] || 'https://via.placeholder.com/200x300?text=No+Image';
   const time = formatTime(task.created_at);
 
   return (
@@ -50,15 +50,15 @@ function HistoryCard({ task }: { task: ImageTaskDetail }) {
           <AspectRatio ratio={6 / 9}>
             <img
               src={thumbnail}
-              alt={`Task ${task.task_id}`}
+              alt={`Task ${task.id}`}
               className="w-full h-full object-cover"
             />
             {/* 状态指示器 */}
-            {task.status === 'queued' || task.status === 'running' ? (
+            {task.status === TaskStatus.QUEUED || task.status === TaskStatus.PROCESSING ? (
               <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                 <Loader2 className="w-6 h-6 text-white animate-spin" />
               </div>
-            ) : task.status === 'failed' ? (
+            ) : task.status === TaskStatus.FAILED ? (
               <div className="absolute inset-0 flex items-center justify-center bg-red-500/40">
                 <span className="text-xs text-white font-medium">Failed</span>
               </div>
@@ -84,7 +84,7 @@ function HistoryCard({ task }: { task: ImageTaskDetail }) {
 
             <img
               src={thumbnail}
-              alt={`Task ${task.task_id}`}
+              alt={`Task ${task.id}`}
               className="h-full object-contain rounded-xl"
             />
 
@@ -100,11 +100,11 @@ function HistoryCard({ task }: { task: ImageTaskDetail }) {
 }
 
 export function HistoryPanel() {
-  const { tasks, isLoading, error, refresh, hasMore, loadMore } = useTaskHistory({ limit: 20 });
+  const { tasks, isLoading, error, refresh, hasMore, loadMore } = useTaskHistory({ pageSize: 20 });
 
   // 过滤只显示完成的任务（有成功结果的）
   const completedTasks = tasks.filter(t =>
-    t.status === 'succeeded' && t.result?.images?.[0]?.oss_url
+    t.status === TaskStatus.SUCCEEDED && t.result?.images?.[0]
   );
 
   return (
@@ -156,7 +156,7 @@ export function HistoryPanel() {
             ) : (
               <>
                 {completedTasks.map((task) => (
-                  <HistoryCard key={task.task_id} task={task} />
+                  <HistoryCard key={task.id} task={task} />
                 ))}
                 {hasMore && (
                   <button
