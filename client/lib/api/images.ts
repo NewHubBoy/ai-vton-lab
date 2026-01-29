@@ -109,8 +109,8 @@ export const imageApi = {
      */
     listTasks: (params?: TaskListParams): Promise<ImageTaskListResponse> => {
         const searchParams = new URLSearchParams();
-        if (params?.limit) searchParams.set('limit', String(params.limit));
-        if (params?.offset) searchParams.set('offset', String(params.offset));
+        if (params?.page) searchParams.set('page', String(params.page));
+        if (params?.page_size) searchParams.set('page_size', String(params.page_size));
         if (params?.status) searchParams.set('status', params.status);
 
         const query = searchParams.toString();

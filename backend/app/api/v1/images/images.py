@@ -16,10 +16,11 @@ from app.core.dependency import AuthControl
 from app.core.image_client import create_batch_job, get_batch_job_status, get_batch_results
 from app.models import User
 from app.models.image_task import ImageTask
-from app.schemas.base import Success
+from app.schemas.base import Success, SuccessExtra
 from app.schemas.image_task import (
     ImageTaskRequest,
     ImageTaskResponse,
+    ImageTaskDetailResponse,
     ImageTaskDetailResponse,
     ImageTaskListResponse,
     BatchImageTaskRequest,
@@ -110,10 +111,10 @@ async def get_task(task_id: str, current_user: User = Depends(AuthControl.is_aut
     }
 
 
-@router.get("/tasks", response_model=ImageTaskListResponse)
+@router.get("/tasks", summary="获取用户任务列表")
 async def list_tasks(
-    limit: int = Query(default=20, ge=1, le=100),
-    offset: int = Query(default=0, ge=0),
+    page: int = Query(1, description="页码"),
+    page_size: int = Query(20, description="每页数量"),
     status: Optional[str] = Query(default=None, description="状态筛选"),
     task_type: Optional[str] = Query(default=None, description="任务类型筛选"),
     current_user: User = Depends(AuthControl.is_authed),
@@ -132,30 +133,30 @@ async def list_tasks(
         query = query.filter(task_type=task_type)
 
     total = await query.count()
-    tasks = await query.order_by("-created_at").offset(offset).limit(limit)
+    tasks = await query.order_by("-created_at").offset((page - 1) * page_size).limit(page_size)
 
-    return {
-        "tasks": [
-            {
-                "task_id": t.id,
-                "task_type": t.task_type,
-                "status": t.status,
-                "prompt": t.prompt,
-                "user_prompt": t.user_prompt,
-                "selected_configs": t.selected_configs,
-                "negative_prompt": t.negative_prompt,
-                "aspect_ratio": t.aspect_ratio,
-                "resolution": t.resolution,
-                "result": t.result_json,
-                "error": {"code": t.error_code, "message": t.error_message} if t.error_code else None,
-                "created_at": t.created_at,
-                "started_at": t.started_at,
-                "finished_at": t.finished_at,
-            }
-            for t in tasks
-        ],
-        "total": total,
-    }
+    # 构造返回数据
+    data = [
+        {
+            "task_id": t.id,
+            "task_type": t.task_type,
+            "status": t.status,
+            "prompt": t.prompt,
+            "user_prompt": t.user_prompt,
+            "selected_configs": t.selected_configs,
+            "negative_prompt": t.negative_prompt,
+            "aspect_ratio": t.aspect_ratio,
+            "resolution": t.resolution,
+            "result": t.result_json,
+            "error": {"code": t.error_code, "message": t.error_message} if t.error_code else None,
+            "created_at": t.created_at,
+            "started_at": t.started_at,
+            "finished_at": t.finished_at,
+        }
+        for t in tasks
+    ]
+
+    return SuccessExtra(data=data, total=total, page=page, page_size=page_size)
 
 
 # ============ Batch API 端点 ============
@@ -302,10 +303,10 @@ class AdminTaskListResponse(BaseModel):
     total: int
 
 
-@router.get("/admin/tasks", response_model=AdminTaskListResponse)
+@router.get("/admin/tasks", summary="管理员获取所有图像生成任务列表")
 async def admin_list_tasks(
-    limit: int = Query(default=20, ge=1, le=100),
-    offset: int = Query(default=0, ge=0),
+    page: int = Query(1, description="页码"),
+    page_size: int = Query(20, description="每页数量"),
     status: Optional[str] = Query(default=None, description="状态筛选"),
     task_type: Optional[str] = Query(default=None, description="任务类型筛选"),
     user_id: Optional[str] = Query(default=None, description="用户ID筛选"),
@@ -333,7 +334,7 @@ async def admin_list_tasks(
         query = query.filter(user_id=user_id)
 
     total = await query.count()
-    tasks = await query.order_by("-created_at").offset(offset).limit(limit)
+    tasks = await query.order_by("-created_at").offset((page - 1) * page_size).limit(page_size)
 
     # 构建任务列表，同时获取用户名
     task_list = []
@@ -365,12 +366,7 @@ async def admin_list_tasks(
             }
         )
 
-    return {
-        "code": 200,
-        "msg": "success",
-        "data": task_list,
-        "total": total,
-    }
+    return SuccessExtra(data=task_list, total=total, page=page, page_size=page_size)
 
 
 @router.get("/admin/tasks/{task_id}", response_model=AdminImageTaskResponse)
@@ -397,21 +393,23 @@ async def admin_get_task(
         user = await User.get_or_none(id=task.user_id)
         username = user.username if user else None
 
-    return Success(data={
-        "task_id": task.id,
-        "user_id": task.user_id,
-        "username": username,
-        "task_type": task.task_type,
-        "status": task.status,
-        "prompt": task.prompt,
-        "user_prompt": task.user_prompt,
-        "selected_configs": task.selected_configs,
-        "negative_prompt": task.negative_prompt,
-        "aspect_ratio": task.aspect_ratio,
-        "resolution": task.resolution,
-        "result": task.result_json,
-        "error": {"code": task.error_code, "message": task.error_message} if task.error_code else None,
-        "created_at": task.created_at,
-        "started_at": task.started_at,
-        "finished_at": task.finished_at,
-    })
+    return Success(
+        data={
+            "task_id": task.id,
+            "user_id": task.user_id,
+            "username": username,
+            "task_type": task.task_type,
+            "status": task.status,
+            "prompt": task.prompt,
+            "user_prompt": task.user_prompt,
+            "selected_configs": task.selected_configs,
+            "negative_prompt": task.negative_prompt,
+            "aspect_ratio": task.aspect_ratio,
+            "resolution": task.resolution,
+            "result": task.result_json,
+            "error": {"code": task.error_code, "message": task.error_message} if task.error_code else None,
+            "created_at": task.created_at,
+            "started_at": task.started_at,
+            "finished_at": task.finished_at,
+        }
+    )

@@ -483,7 +483,7 @@ export function useUserCredits() {
   })
 }
 
-export function useRechargeRecords(params?: { limit?: number; offset?: number; status?: string }) {
+export function useRechargeRecords(params?: { page?: number; page_size?: number; status?: string }) {
   return useQuery({
     queryKey: ['rechargeRecords', params],
     queryFn: () => rechargeApi.getRecords(params),
@@ -522,14 +522,14 @@ export function useRedeemCardCode() {
 
 // ============ Admin Recharge Hooks ============
 
-export function useAdminRechargeRecords(params?: { limit?: number; offset?: number; user_id?: number; status?: string }) {
+export function useAdminRechargeRecords(params?: { page?: number; page_size?: number; user_id?: number; status?: string }) {
   return useQuery({
     queryKey: ['adminRechargeRecords', params],
     queryFn: () => rechargeApi.adminGetRecords(params),
   })
 }
 
-export function useAdminCardCodes(params?: { limit?: number; offset?: number; batch_no?: string; is_used?: boolean }) {
+export function useAdminCardCodes(params?: { page?: number; page_size?: number; batch_no?: string; is_used?: boolean }) {
   return useQuery({
     queryKey: ['adminCardCodes', params],
     queryFn: () => rechargeApi.adminListCards(params),

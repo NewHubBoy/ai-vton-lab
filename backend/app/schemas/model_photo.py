@@ -2,6 +2,31 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 
+
+class ModelImageCreate(BaseModel):
+    model_photo_id: int
+    filename: str
+    width: Optional[int] = None
+    height: Optional[int] = None
+    size: Optional[int] = None
+    content_type: Optional[str] = None
+    extension: Optional[str] = None
+    oss_object_name: str
+    oss_url: Optional[str] = None
+    image_type: str
+    is_primary: bool = False
+
+
+class ModelImageResponse(ModelImageCreate):
+    id: int
+    user_id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+        ser_json_datetimes = "iso8601"
+
+
 class ModelPhotoCreate(BaseModel):
     task_id: Optional[str] = None
     batch_id: Optional[str] = None
@@ -20,6 +45,7 @@ class ModelPhotoCreate(BaseModel):
     model_version: Optional[str] = None
     pipeline_version: Optional[str] = None
 
+
 class ModelPhotoUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
@@ -32,6 +58,7 @@ class ModelPhotoUpdate(BaseModel):
     image_count: Optional[int] = None
     total_size: Optional[int] = None
 
+
 class ModelPhotoResponse(ModelPhotoCreate):
     id: int
     user_id: int
@@ -39,28 +66,7 @@ class ModelPhotoResponse(ModelPhotoCreate):
     progress: int
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
-        ser_json_datetimes = "iso8601"
-
-class ModelImageCreate(BaseModel):
-    model_photo_id: int
-    filename: str
-    width: Optional[int] = None
-    height: Optional[int] = None
-    size: Optional[int] = None
-    content_type: Optional[str] = None
-    extension: Optional[str] = None
-    oss_object_name: str
-    oss_url: Optional[str] = None
-    image_type: str
-    is_primary: bool = False
-
-class ModelImageResponse(ModelImageCreate):
-    id: int
-    user_id: int
-    created_at: datetime
+    images: Optional[List[ModelImageResponse]] = None
 
     class Config:
         from_attributes = True

@@ -1,10 +1,11 @@
 """充值 API"""
+
 import secrets
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import JSONResponse
 from tortoise.expressions import Q
 
@@ -14,6 +15,7 @@ get_current_user = AuthControl.is_authed
 from app.core.payment import payment_service
 from app.models.admin import User
 from app.models.recharge import RechargeRecord, CardCode, RechargeConfig
+from app.schemas.base import SuccessExtra
 from app.schemas.recharge import (
     RechargeRecordCreate,
     RechargeRecordListResponse,
@@ -34,6 +36,7 @@ recharge_router = router = APIRouter()
 
 # ==================== 用户端 API ====================
 
+
 @router.get("/credits", response_model=UserCreditsResponse)
 async def get_user_credits(current_user: User = Depends(get_current_user)):
     """获取用户积分"""
@@ -45,8 +48,8 @@ async def get_user_credits(current_user: User = Depends(get_current_user)):
 
 @router.get("/records")
 async def get_recharge_records(
-    limit: int = 10,
-    offset: int = 0,
+    page: int = Query(1, description="页码"),
+    page_size: int = Query(10, description="每页数量"),
     status: Optional[str] = None,
     current_user: User = Depends(get_current_user),
 ):
@@ -57,14 +60,9 @@ async def get_recharge_records(
         query = query.filter(payment_status=status)
 
     total = await query.count()
-    records = await query.offset(offset).limit(limit).order_by("-created_at")
+    records = await query.offset((page - 1) * page_size).limit(page_size).order_by("-created_at")
 
-    return {
-        "data": [r for r in records],
-        "total": total,
-        "limit": limit,
-        "offset": offset,
-    }
+    return SuccessExtra(data=[r for r in records], total=total, page=page, page_size=page_size)
 
 
 @router.post("/create")
@@ -138,10 +136,11 @@ async def get_recharge_configs():
 
 # ==================== 管理端 API ====================
 
+
 @router.get("/admin/records")
 async def admin_get_recharge_records(
-    limit: int = 10,
-    offset: int = 0,
+    page: int = Query(1, description="页码"),
+    page_size: int = Query(10, description="每页数量"),
     user_id: Optional[int] = None,
     status: Optional[str] = None,
     current_user: User = Depends(get_current_user),
@@ -158,7 +157,7 @@ async def admin_get_recharge_records(
         query = query.filter(payment_status=status)
 
     total = await query.count()
-    records = await query.offset(offset).limit(limit).order_by("-created_at")
+    records = await query.offset((page - 1) * page_size).limit(page_size).order_by("-created_at")
 
     # 关联用户信息
     result = []
@@ -180,12 +179,7 @@ async def admin_get_recharge_records(
         }
         result.append(record_dict)
 
-    return {
-        "data": result,
-        "total": total,
-        "limit": limit,
-        "offset": offset,
-    }
+    return SuccessExtra(data=result, total=total, page=page, page_size=page_size)
 
 
 @router.post("/admin/card/generate")
@@ -213,11 +207,13 @@ async def admin_generate_card_codes(
             credits=credits,
             expired_at=data.expired_at,
         )
-        codes.append({
-            "code": card.code,
-            "amount": str(card.amount),
-            "credits": card.credits,
-        })
+        codes.append(
+            {
+                "code": card.code,
+                "amount": str(card.amount),
+                "credits": card.credits,
+            }
+        )
 
     return {
         "batch_no": batch_no,
@@ -227,8 +223,8 @@ async def admin_generate_card_codes(
 
 @router.get("/admin/card/list")
 async def admin_list_card_codes(
-    limit: int = 20,
-    offset: int = 0,
+    page: int = Query(1, description="页码"),
+    page_size: int = Query(20, description="每页数量"),
     batch_no: Optional[str] = None,
     is_used: Optional[bool] = None,
     current_user: User = Depends(get_current_user),
@@ -245,14 +241,9 @@ async def admin_list_card_codes(
         query = query.filter(is_used=is_used)
 
     total = await query.count()
-    cards = await query.offset(offset).limit(limit).order_by("-created_at")
+    cards = await query.offset((page - 1) * page_size).limit(page_size).order_by("-created_at")
 
-    return {
-        "data": [c for c in cards],
-        "total": total,
-        "limit": limit,
-        "offset": offset,
-    }
+    return SuccessExtra(data=[c for c in cards], total=total, page=page, page_size=page_size)
 
 
 @router.post("/admin/config")
@@ -346,6 +337,7 @@ async def admin_add_user_credits(
 
 
 # ==================== Stripe Webhook ====================
+
 
 @router.post("/stripe/webhook")
 async def stripe_webhook(request: Request):

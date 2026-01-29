@@ -44,7 +44,6 @@ const generationTypeOptions = [
   { label: '全部', value: 'all' },
   { label: '文本生成', value: 'text2img' },
   { label: '图片生成', value: 'img2img' },
-  { label: '换装合成', value: 'tryon' },
 ]
 
 const statusColors: Record<string, string> = {

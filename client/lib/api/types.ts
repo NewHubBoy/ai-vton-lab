@@ -80,16 +80,18 @@ export interface ImageTaskDetail {
  * 图像任务列表响应
  */
 export interface ImageTaskListResponse {
-    tasks: ImageTaskDetail[];
+    data: ImageTaskDetail[];
     total: number;
+    page: number;
+    page_size: number;
 }
 
 /**
  * 任务列表查询参数
  */
 export interface TaskListParams {
-    limit?: number;
-    offset?: number;
+    page?: number;
+    page_size?: number;
     status?: string;
     task_type?: TaskType;
 }

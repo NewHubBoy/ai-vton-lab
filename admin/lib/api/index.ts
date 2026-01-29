@@ -419,15 +419,17 @@ export interface ImageTask {
 }
 
 export interface ImageTaskListParams {
-  limit?: number
-  offset?: number
+  page?: number
+  page_size?: number
   status?: string
   user_id?: string
 }
 
 export interface ImageTaskListResponse {
-  tasks: ImageTask[]
+  data: ImageTask[]
   total: number
+  page: number
+  page_size: number
 }
 
 export const imageTaskApi = {
@@ -614,8 +616,8 @@ export const rechargeApi = {
     apiClient.get<UserCredits>('/recharge/credits'),
 
   // 获取充值记录
-  getRecords: (params?: { limit?: number; offset?: number; status?: string }) =>
-    apiClient.get<{ data: RechargeRecord[]; total: number; limit: number; offset: number }>(
+  getRecords: (params?: { page?: number; page_size?: number; status?: string }) =>
+    apiClient.getPaginated<{ data: RechargeRecord[]; total: number; page: number; page_size: number }>(
       '/recharge/records',
       params
     ),
@@ -641,8 +643,8 @@ export const rechargeApi = {
   // ============ Admin APIs ============
 
   // 管理端获取所有充值记录
-  adminGetRecords: (params?: { limit?: number; offset?: number; user_id?: number; status?: string }) =>
-    apiClient.get<{ data: RechargeRecord[]; total: number; limit: number; offset: number }>(
+  adminGetRecords: (params?: { page?: number; page_size?: number; user_id?: number; status?: string }) =>
+    apiClient.getPaginated<{ data: RechargeRecord[]; total: number; page: number; page_size: number }>(
       '/recharge/admin/records',
       params
     ),
@@ -655,8 +657,8 @@ export const rechargeApi = {
     ),
 
   // 管理端查询卡密列表
-  adminListCards: (params?: { limit?: number; offset?: number; batch_no?: string; is_used?: boolean }) =>
-    apiClient.get<{ data: CardCode[]; total: number }>(
+  adminListCards: (params?: { page?: number; page_size?: number; batch_no?: string; is_used?: boolean }) =>
+    apiClient.getPaginated<{ data: CardCode[]; total: number; page: number; page_size: number }>(
       '/recharge/admin/card/list',
       params
     ),

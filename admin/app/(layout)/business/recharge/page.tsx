@@ -50,8 +50,8 @@ const methodLabels: Record<string, string> = {
 }
 
 export default function RechargeRecordsPage() {
-  const [offset, setOffset] = useState(0)
-  const limit = 10
+  const [page, setPage] = useState(1)
+  const pageSize = 10
   const [filters, setFilters] = useState({
     status: 'all',
     user_id: '',
@@ -63,8 +63,8 @@ export default function RechargeRecordsPage() {
   const [configForm, setConfigForm] = useState({ name: '', amount: '', credits: '', description: '' })
 
   const { data: recordsData, isLoading } = useAdminRechargeRecords({
-    limit,
-    offset,
+    page,
+    page_size: pageSize,
     status: filters.status === 'all' ? undefined : filters.status,
     user_id: filters.user_id ? parseInt(filters.user_id) : undefined,
   })
@@ -150,7 +150,7 @@ export default function RechargeRecordsPage() {
               <span className="text-sm font-semibold">查询过滤</span>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setOffset(0)}>
+              <Button variant="outline" size="sm" onClick={() => setPage(1)}>
                 <Search className="h-4 w-4 mr-1" />
                 搜索
               </Button>
@@ -248,16 +248,16 @@ export default function RechargeRecordsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setOffset((p) => Math.max(0, p - limit))}
-                disabled={offset === 0}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
               >
                 上一页
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setOffset((p) => p + limit)}
-                disabled={records.length < limit}
+                onClick={() => setPage((p) => p + 1)}
+                disabled={records.length < pageSize}
               >
                 下一页
               </Button>

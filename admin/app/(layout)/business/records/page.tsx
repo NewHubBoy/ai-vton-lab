@@ -220,8 +220,8 @@ function TaskDetailDialog({ taskId, open, onOpenChange }: { taskId: string; open
 }
 
 export default function ImageTasksPage() {
-  const [offset, setOffset] = useState(0)
-  const [limit] = useState(10)
+  const [page, setPage] = useState(1)
+  const [pageSize] = useState(10)
   const [filters, setFilters] = useState({
     status: 'all',
     user_id: '',
@@ -230,14 +230,13 @@ export default function ImageTasksPage() {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false)
 
   const { data: tasksData, isLoading } = useImageTasks({
-    limit,
-    offset,
+    page,
+    page_size: pageSize,
     status: filters.status === 'all' ? undefined : filters.status,
     user_id: filters.user_id || undefined,
   })
 
-  // 后端返回格式: { code: 200, msg: "success", data: [...tasks], total: 11 }
-  // data 直接是数组，不是嵌套对象
+  // 后端返回格式: SuccessExtra
   const response = tasksData as { data?: ImageTask[]; total?: number } | undefined
   const tasks = response?.data || []
   const total = response?.total || 0
@@ -245,7 +244,7 @@ export default function ImageTasksPage() {
   console.log('tasks', response, tasks, total)
 
   const handleSearch = () => {
-    setOffset(0)
+    setPage(1)
   }
 
   const handleReset = () => {
@@ -413,16 +412,16 @@ export default function ImageTasksPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setOffset((p) => Math.max(0, p - limit))}
-                disabled={offset === 0}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
               >
                 上一页
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setOffset((p) => p + limit)}
-                disabled={tasks.length < limit}
+                onClick={() => setPage((p) => p + 1)}
+                disabled={tasks.length < pageSize}
               >
                 下一页
               </Button>

@@ -27,7 +27,9 @@ async def get_model_photos(page: int = 1, page_size: int = 10, status: str = Non
         query = query.filter(generation_type=generation_type)
 
     total = await query.count()
-    items = await query.offset((page - 1) * page_size).limit(page_size).order_by("-created_at")
+    items = (
+        await query.prefetch_related("images").offset((page - 1) * page_size).limit(page_size).order_by("-created_at")
+    )
 
     return SuccessExtra(
         data=[ModelPhotoResponse.model_validate(item) for item in items], total=total, page=page, page_size=page_size
@@ -46,9 +48,15 @@ async def get_all_model_photos(page: int = 1, page_size: int = 10, status: str =
         query = query.filter(status=status)
     if generation_type:
         query = query.filter(generation_type=generation_type)
+    else:
+        # 默认只显示模特生成类型的记录（text2img, img2img, model）
+        # 排除 tryon (有单独接口) 和 detail (有单独接口)
+        query = query.filter(generation_type__in=["text2img", "img2img", "model"])
 
     total = await query.count()
-    items = await query.offset((page - 1) * page_size).limit(page_size).order_by("-created_at")
+    items = (
+        await query.prefetch_related("images").offset((page - 1) * page_size).limit(page_size).order_by("-created_at")
+    )
 
     # 获取用户信息
     from app.models.admin import User
@@ -75,7 +83,9 @@ async def get_tryon_records(page: int = 1, page_size: int = 10, status: str = No
         query = query.filter(status=status)
 
     total = await query.count()
-    items = await query.offset((page - 1) * page_size).limit(page_size).order_by("-created_at")
+    items = (
+        await query.prefetch_related("images").offset((page - 1) * page_size).limit(page_size).order_by("-created_at")
+    )
 
     # 获取用户信息
     from app.models.admin import User
