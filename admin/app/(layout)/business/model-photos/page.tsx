@@ -44,6 +44,7 @@ const generationTypeOptions = [
   { label: '全部', value: 'all' },
   { label: '文本生成', value: 'text2img' },
   { label: '图片生成', value: 'img2img' },
+  { label: '换装合成', value: 'tryon' },
 ]
 
 const statusColors: Record<string, string> = {
@@ -74,6 +75,8 @@ export default function ModelPhotosPage() {
     generation_type: filters.generation_type === 'all' ? undefined : filters.generation_type,
   })
 
+  // 后端返回格式: { code: 200, msg: "success", data: [...records], total: 11, page: 1, page_size: 10 }
+  // data 直接是数组，不是嵌套对象
   const response = recordsData as { data?: any[]; total?: number } | undefined
   const records = response?.data || []
   const total = response?.total || 0

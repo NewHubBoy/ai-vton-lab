@@ -433,7 +433,7 @@ export interface ImageTaskListResponse {
 export const imageTaskApi = {
   // 获取任务列表（管理员）
   getList: (params?: ImageTaskListParams) =>
-    apiClient.get<ImageTaskListResponse>('/images/admin/tasks', params),
+    apiClient.getPaginated<ImageTaskListResponse>('/images/admin/tasks', params),
 
   // 获取任务详情（管理员）
   getDetail: (params: { task_id: string }) =>

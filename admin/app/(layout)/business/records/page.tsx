@@ -62,6 +62,8 @@ const statusLabels: Record<string, string> = {
 // 任务详情 Dialog
 function TaskDetailDialog({ taskId, open, onOpenChange }: { taskId: string; open: boolean; onOpenChange: (open: boolean) => void }) {
   const { data: task, isLoading } = useImageTaskDetail(taskId)
+
+  console.log('task', task)
   const taskData = task as ImageTask | undefined
 
   return (
@@ -234,9 +236,13 @@ export default function ImageTasksPage() {
     user_id: filters.user_id || undefined,
   })
 
-  const response = tasksData as { tasks?: ImageTask[]; total?: number } | undefined
-  const tasks = response?.tasks || []
+  // 后端返回格式: { code: 200, msg: "success", data: [...tasks], total: 11 }
+  // data 直接是数组，不是嵌套对象
+  const response = tasksData as { data?: ImageTask[]; total?: number } | undefined
+  const tasks = response?.data || []
   const total = response?.total || 0
+
+  console.log('tasks', response, tasks, total)
 
   const handleSearch = () => {
     setOffset(0)

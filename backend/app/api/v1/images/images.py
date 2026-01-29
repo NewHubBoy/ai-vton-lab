@@ -16,6 +16,7 @@ from app.core.dependency import AuthControl
 from app.core.image_client import create_batch_job, get_batch_job_status, get_batch_results
 from app.models import User
 from app.models.image_task import ImageTask
+from app.schemas.base import Success
 from app.schemas.image_task import (
     ImageTaskRequest,
     ImageTaskResponse,
@@ -396,7 +397,7 @@ async def admin_get_task(
         user = await User.get_or_none(id=task.user_id)
         username = user.username if user else None
 
-    return {
+    return Success(data={
         "task_id": task.id,
         "user_id": task.user_id,
         "username": username,
@@ -413,4 +414,4 @@ async def admin_get_task(
         "created_at": task.created_at,
         "started_at": task.started_at,
         "finished_at": task.finished_at,
-    }
+    })

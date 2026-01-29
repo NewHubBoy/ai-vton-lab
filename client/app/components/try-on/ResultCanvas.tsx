@@ -6,7 +6,6 @@ import {
   Download,
   RefreshCw,
   Shirt,
-  CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
 import { useTryOnStore } from '@/lib/store';
@@ -144,17 +143,6 @@ export function ResultCanvas() {
               >
                 <RefreshCw className="w-4 h-4" />
               </button>
-            </motion.div>
-
-            {/* Success indicator */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-emerald-500/90 backdrop-blur-md rounded-full"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-              <span className="text-xs font-medium text-white">生成完成</span>
             </motion.div>
           </motion.div>
         )}

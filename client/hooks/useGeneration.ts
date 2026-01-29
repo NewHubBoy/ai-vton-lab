@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { useTryOnStore } from '@/lib/store';
 import { imageApi } from '@/lib/api';
 import { useWebSocket } from './useWebSocket';
@@ -194,10 +195,13 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
                     setResultImage(imageUrl);
                 }
                 setIsGenerating(false);
+                toast.success('换装完成！');
             } else if (msg.status === 'failed') {
                 const error = msg.error as { message?: string } | undefined;
-                setError(error?.message || '生成失败');
+                const errorMsg = error?.message || '生成失败';
+                setError(errorMsg);
                 setIsGenerating(false);
+                toast.error(`生成失败: ${errorMsg}`);
             }
         });
 

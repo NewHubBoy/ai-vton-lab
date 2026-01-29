@@ -67,6 +67,8 @@ export default function TryonRecordsPage() {
     status: filters.status === 'all' ? undefined : filters.status,
   })
 
+  // 后端返回格式: { code: 200, msg: "success", data: [...records], total: 11, page: 1, page_size: 10 }
+  // data 直接是数组，不是嵌套对象
   const response = recordsData as { data?: any[]; total?: number } | undefined
   const records = response?.data || []
   const total = response?.total || 0
