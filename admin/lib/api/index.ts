@@ -437,6 +437,7 @@ export interface GenerationTask {
   prompt?: string
   aspect_ratio?: string
   quality?: string
+  prompt_configs?: Record<string, string[]>
   result?: {
     images?: string[]
     local_paths?: string[]

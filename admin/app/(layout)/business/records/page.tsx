@@ -168,6 +168,29 @@ function TaskDetailDialog({ taskId, open, onOpenChange }: { taskId: string; open
                   </div>
                 </div>
 
+                {/* 动态提示词配置 */}
+                {taskData.prompt_configs && Object.keys(taskData.prompt_configs).length > 0 && (
+                  <div className="space-y-2">
+                    <span className="text-sm font-medium">提示词配置</span>
+                    <div className="p-3 bg-muted rounded-lg">
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        {Object.entries(taskData.prompt_configs).map(([key, values]) => (
+                          <div key={key} className="space-y-1">
+                            <span className="text-muted-foreground">{key}</span>
+                            <div className="flex flex-wrap gap-1">
+                              {(Array.isArray(values) ? values : [values]).map((v, i) => (
+                                <Badge key={i} variant="secondary" className="text-xs">
+                                  {String(v)}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <span className="text-sm text-muted-foreground">宽高比</span>

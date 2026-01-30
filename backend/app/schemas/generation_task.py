@@ -128,6 +128,7 @@ class GenerationTaskResponse(BaseModel):
     quality: Optional[str]
     result: Optional[Dict[str, Any]] = Field(None, description="结果数据 {images: [...], ...}")
     error: Optional[Dict[str, Any]]
+    prompt_configs: Optional[Dict[str, List[str]]] = Field(None, description="动态配置 {group_key: [option_key, ...]}")
     created_at: datetime
     started_at: Optional[datetime]
     finished_at: Optional[datetime]
@@ -172,6 +173,7 @@ class GenerationTaskResponse(BaseModel):
             quality=obj.quality,
             result=obj.result,
             error=obj.error,
+            prompt_configs=obj.prompt_configs,
             created_at=obj.created_at,
             started_at=obj.started_at,
             finished_at=obj.finished_at,
