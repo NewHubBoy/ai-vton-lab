@@ -105,12 +105,29 @@ async def process_single_task(task: GenerationTask) -> bool:
     prompt = task.prompt or "Default prompt"
 
     # 如果是 Tryon 任务，可能需要获取图片路径
-    # await task.fetch_related("tryon", "detail", "model_gen")
+    await task.fetch_related("tryon", "detail", "model_gen")
+
+    # 准备参考图片
+    reference_images = []
+    if task.task_type == TaskType.TRYON and task.tryon:
+        # Tryon 任务使用 person_image 和 garment_image
+        if task.tryon.person_image:
+            reference_images.append(task.tryon.person_image)
+        if task.tryon.garment_image:
+            reference_images.append(task.tryon.garment_image)
+
+    # Handle Detail type
+    if task.task_type == TaskType.DETAIL and task.detail:
+        if task.detail.input_image:
+            reference_images.append(task.detail.input_image)
+
+    # Model type currently has no reference images in schema
 
     for attempt in range(CONFIG["retry_times"]):
         try:
             result = generate_image(
                 prompt=prompt,
+                reference_images=reference_images,
                 aspect_ratio=task.aspect_ratio or "1:1",
                 resolution=task.quality or "1K",  # 映射 quality 字段
                 output_filename=f"task_{task.id}",

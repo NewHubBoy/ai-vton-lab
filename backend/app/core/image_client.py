@@ -334,13 +334,21 @@ class BatchImageClient:
                     }
 
                     # 处理生成的图像
-                    if hasattr(result, "response"):
-                        for part in result.response.candidates[0].content.parts:
-                            if part.inline_data:
-                                output_file = output_dir / f"batch_{batch_name.split('/')[-1]}_{i}.png"
-                                with open(output_file, "wb") as f:
-                                    f.write(part.inline_data.data)
-                                result_item["images"].append(str(output_file))
+                    if (
+                        hasattr(result, "response")
+                        and hasattr(result.response, "candidates")
+                        and result.response.candidates
+                    ):
+                        candidate = result.response.candidates[0]
+                        if candidate.content and candidate.content.parts:
+                            for part in candidate.content.parts:
+                                if part.inline_data:
+                                    output_file = output_dir / f"batch_{batch_name.split('/')[-1]}_{i}.png"
+                                    with open(output_file, "wb") as f:
+                                        f.write(part.inline_data.data)
+                                    result_item["images"].append(str(output_file))
+                        elif hasattr(candidate, "finish_reason"):
+                            result_item["error"] = f"Generation failed. Finish reason: {candidate.finish_reason}"
 
                     results["results"].append(result_item)
 
@@ -493,8 +501,11 @@ class ImageClient:
                         temp_dir.mkdir(parents=True, exist_ok=True)
                         temp_path = temp_dir / f"reference_{uuid.uuid4().hex[:8]}"
                         mime_type = response.headers.get("content-type", "image/jpeg")
-                        ext = ".jpg" if "jpeg" in mime_type or "jpg" in mime_type else \
-                              ".png" if "png" in mime_type else ".webp"
+                        ext = (
+                            ".jpg"
+                            if "jpeg" in mime_type or "jpg" in mime_type
+                            else ".png" if "png" in mime_type else ".webp"
+                        )
                         temp_file = temp_path.with_suffix(ext)
                         with open(temp_file, "wb") as f:
                             f.write(image_bytes)
@@ -562,19 +573,48 @@ class ImageClient:
             }
 
             # 处理生成的图像
-            if hasattr(response, "candidates"):
+            if hasattr(response, "candidates") and response.candidates:
+                candidate = response.candidates[0]
+
+                # Check if content exists (blocked by safety settings?)
+                if not candidate.content:
+                    finish_reason = getattr(candidate, "finish_reason", "UNKNOWN")
+                    safety_ratings = getattr(candidate, "safety_ratings", [])
+
+                    # 构建详细的警告信息
+                    warnings = f"Generation prevented. Finish reason: {finish_reason}"
+                    if safety_ratings:
+                        ratings_str = ", ".join([f"{r.category}: {r.probability}" for r in safety_ratings])
+                        warnings += f". Safety Ratings: [{ratings_str}]"
+
+                    if verbose:
+                        print(f"  Warning: {warnings}")
+                        # 打印完整的 candidate 对象以便调试
+                        print(f"  Full Candidate: {candidate}")
+
+                    return {
+                        "status": "error",
+                        "error": warnings,
+                        "prompt": prompt,
+                        "aspect_ratio": aspect_ratio,
+                        "resolution": resolution,
+                        "model": model,
+                        "safety_ratings": str(safety_ratings),
+                    }
+
                 output_dir = self._get_output_dir()
                 filename = output_filename or f"generated_{aspect_ratio.replace(':', '-')}_{resolution}"
 
-                for i, part in enumerate(response.candidates[0].content.parts):
-                    if part.inline_data:
-                        output_file = output_dir / f"{filename}_{i}.png"
-                        with open(output_file, "wb") as f:
-                            f.write(part.inline_data.data)
-                        result["generated_images"].append(str(output_file))
+                if hasattr(candidate.content, "parts"):
+                    for i, part in enumerate(candidate.content.parts):
+                        if part.inline_data:
+                            output_file = output_dir / f"{filename}_{i}.png"
+                            with open(output_file, "wb") as f:
+                                f.write(part.inline_data.data)
+                            result["generated_images"].append(str(output_file))
 
-                        if verbose:
-                            print(f"  Saved: {output_file}")
+                            if verbose:
+                                print(f"  Saved: {output_file}")
 
             return result
 
@@ -714,13 +754,13 @@ if __name__ == "__main__":
     parser.add_argument("--aspect-ratio", default="1:1", choices=AspectRatio.values(), help="宽高比 (默认: 1:1)")
     parser.add_argument("--resolution", default="1K", choices=Resolution.values(), help="分辨率 (默认: 1K)")
     parser.add_argument("--output", dest="output_filename", help="输出文件名（不含扩展名）")
-    parser.add_argument("--model", default=None, help=f"使用的模型 (默认: 从 GEMINI_MODEL 环境变量读取，当前: {find_model()})")
+    parser.add_argument(
+        "--model", default=None, help=f"使用的模型 (默认: 从 GEMINI_MODEL 环境变量读取，当前: {find_model()})"
+    )
     parser.add_argument(
         "--verbose", "-v", dest="verbose", default=None, action="store_true", help="显示详细信息 (开发环境默认启用)"
     )
-    parser.add_argument(
-        "--quiet", "-q", dest="verbose", action="store_false", help="静默模式 (禁用 verbose)"
-    )
+    parser.add_argument("--quiet", "-q", dest="verbose", action="store_false", help="静默模式 (禁用 verbose)")
     parser.add_argument("--dry-run", action="store_true", help="模拟运行，不调用 API")
 
     args = parser.parse_args()
