@@ -84,3 +84,5 @@ ProjectPlan.md
 *.mcp.json
 */*.mcp.json
 /docs
+
+.codeartsdoer
