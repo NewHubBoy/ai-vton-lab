@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { useTryOnStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { usePromptConfig } from '@/hooks/usePromptConfig';
@@ -402,7 +402,7 @@ export function ModelGenSettings() {
     setDynamicConfigs,
   } = useTryOnStore();
 
-  const { configs, isLoading, error } = usePromptConfig();
+  const { configs, isLoading, error, refetch } = usePromptConfig();
 
   // 初始化默认值
   useEffect(() => {
@@ -445,8 +445,15 @@ export function ModelGenSettings() {
 
   if (error) {
     return (
-      <div className="text-center py-12 text-sm text-red-500">
-        加载配置失败: {error.message}
+      <div className="text-center py-12 space-y-3">
+        <p className="text-sm text-red-500">加载配置失败: {error.message}</p>
+        <button
+          onClick={() => refetch()}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+        >
+          <RefreshCw className="w-4 h-4" />
+          重新加载
+        </button>
       </div>
     );
   }

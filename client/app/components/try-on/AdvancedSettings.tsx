@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings2, ChevronDown, Loader2 } from 'lucide-react';
+import { Settings2, ChevronDown, Loader2, RefreshCw } from 'lucide-react';
 import { useTryOnStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { usePromptConfig } from '@/hooks/usePromptConfig';
@@ -427,7 +427,7 @@ export function AdvancedSettings({ configType = 'tryon' }: AdvancedSettingsProps
     setDynamicConfigs,
   } = useTryOnStore();
 
-  const { configs, isLoading, error } = usePromptConfig({ configType });
+  const { configs, isLoading, error, refetch } = usePromptConfig({ configType });
 
   // 初始化默认值
   useEffect(() => {
@@ -501,8 +501,15 @@ export function AdvancedSettings({ configType = 'tryon' }: AdvancedSettingsProps
                   <span className="ml-2 text-xs text-zinc-500">加载配置中...</span>
                 </div>
               ) : error ? (
-                <div className="text-center py-4 text-xs text-red-500">
-                  加载配置失败: {error.message}
+                <div className="text-center py-4 space-y-2">
+                  <p className="text-xs text-red-500">加载配置失败: {error.message}</p>
+                  <button
+                    onClick={() => refetch()}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    重新加载
+                  </button>
                 </div>
               ) : configs.length === 0 ? (
                 <div className="text-center py-4 text-xs text-zinc-500">
