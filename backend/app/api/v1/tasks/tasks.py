@@ -63,7 +63,11 @@ async def create_task(request: CreateTaskRequest, current_user: User = Depends(A
     # 重新查询以返回完整数据 (包含反向关联)
     # Tortoise ORM 需要 fetch_related 获取关联数据
     # 这里为了返回 response 结构，再次查询
-    created_task = await GenerationTask.filter(id=task_id).prefetch_related("tryon", "detail", "model_gen").first()
+    created_task = (
+        await GenerationTask.filter(id=task_id)
+        .prefetch_related("tryon", "detail", "detail__template", "model_gen")
+        .first()
+    )
 
     # 实际项目中这里应该触发 Celery/Redis 队列
     # trigger_background_job(created_task)
@@ -88,7 +92,7 @@ async def list_tasks(
 
     total = await query.count()
     items = (
-        await query.prefetch_related("tryon", "detail", "model_gen")
+        await query.prefetch_related("tryon", "detail", "detail__template", "model_gen")
         .order_by("-created_at")
         .offset((page - 1) * page_size)
         .limit(page_size)
@@ -105,7 +109,7 @@ async def list_tasks(
 @router.get("/{task_id}", summary="获取任务详情")
 async def get_task(task_id: str, current_user: User = Depends(AuthControl.is_authed)):
     task = await GenerationTask.get_or_none(id=task_id, user_id=str(current_user.id)).prefetch_related(
-        "tryon", "detail", "model_gen"
+        "tryon", "detail", "detail__template", "model_gen"
     )
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")

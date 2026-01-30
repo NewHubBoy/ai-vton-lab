@@ -83,7 +83,27 @@ class TaskTryonResponse(TaskTryonParams):
         from_attributes = True
 
 
-class TaskDetailResponse(TaskDetailParams):
+class TaskDetailResponse(BaseModel):
+    """详情页任务响应"""
+
+    input_image: str
+    template_id: Optional[str] = None
+    extra_options: Optional[Dict[str, Any]] = None
+
+    @classmethod
+    def model_validate(cls, obj, **kwargs):
+        """从 ORM 对象创建响应"""
+        if hasattr(obj, "template") and obj.template:
+            template_id = str(obj.template.id) if hasattr(obj.template, "id") else None
+        else:
+            template_id = getattr(obj, "template_id", None)
+
+        return cls(
+            input_image=obj.input_image,
+            template_id=template_id,
+            extra_options=obj.extra_options,
+        )
+
     class Config:
         from_attributes = True
 
@@ -103,7 +123,7 @@ class GenerationTaskResponse(BaseModel):
     prompt: Optional[str]
     aspect_ratio: Optional[str]
     quality: Optional[str]
-    result: Optional[List[str]] = Field(None, description="结果图片URL列表")
+    result: Optional[Dict[str, Any]] = Field(None, description="结果数据 {images: [...], ...}")
     error: Optional[Dict[str, Any]]
     created_at: datetime
     started_at: Optional[datetime]
@@ -114,6 +134,49 @@ class GenerationTaskResponse(BaseModel):
     tryon: Optional[TaskTryonResponse] = None
     detail: Optional[TaskDetailResponse] = None
     model: Optional[TaskModelResponse] = None
+
+    @classmethod
+    def model_validate(cls, obj, **kwargs):
+        """自定义验证，处理 ORM 对象转换"""
+        # 处理 detail 字段的 template 关联
+        detail_data = None
+        if hasattr(obj, "detail") and obj.detail:
+            detail_obj = obj.detail
+            template_id = None
+            if hasattr(detail_obj, "template") and detail_obj.template:
+                template_id = str(detail_obj.template.id)
+            elif hasattr(detail_obj, "template_id") and detail_obj.template_id:
+                template_id = str(detail_obj.template_id) if detail_obj.template_id else None
+
+            detail_data = TaskDetailResponse(
+                input_image=detail_obj.input_image,
+                template_id=template_id,
+                extra_options=detail_obj.extra_options,
+            )
+
+        # 处理 model_gen -> model 字段映射
+        model_data = None
+        if hasattr(obj, "model_gen") and obj.model_gen:
+            model_data = TaskModelResponse.model_validate(obj.model_gen)
+
+        return cls(
+            id=obj.id,
+            user_id=obj.user_id,
+            task_type=obj.task_type,
+            status=obj.status,
+            prompt=obj.prompt,
+            aspect_ratio=obj.aspect_ratio,
+            quality=obj.quality,
+            result=obj.result,
+            error=obj.error,
+            created_at=obj.created_at,
+            started_at=obj.started_at,
+            finished_at=obj.finished_at,
+            is_deleted=obj.is_deleted,
+            tryon=TaskTryonResponse.model_validate(obj.tryon) if hasattr(obj, "tryon") and obj.tryon else None,
+            detail=detail_data,
+            model=model_data,
+        )
 
     class Config:
         from_attributes = True

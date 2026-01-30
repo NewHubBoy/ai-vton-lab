@@ -105,7 +105,7 @@ async def process_single_task(task: GenerationTask) -> bool:
     prompt = task.prompt or "Default prompt"
 
     # 如果是 Tryon 任务，可能需要获取图片路径
-    await task.fetch_related("tryon", "detail", "model_gen")
+    await task.fetch_related("tryon", "detail", "detail__template", "model_gen")
 
     # 准备参考图片
     reference_images = []
@@ -120,6 +120,11 @@ async def process_single_task(task: GenerationTask) -> bool:
     if task.task_type == TaskType.DETAIL and task.detail:
         if task.detail.input_image:
             reference_images.append(task.detail.input_image)
+        # 尝试从模版 config 中获取 prompt
+        if task.detail.template and hasattr(task.detail.template, "config"):
+            template_config = task.detail.template.config or {}
+            if template_config.get("prompt"):
+                prompt = template_config["prompt"]
 
     # Model type currently has no reference images in schema
 

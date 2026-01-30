@@ -216,18 +216,18 @@ async def handle_websocket_connection(websocket: WebSocket, token: str) -> Optio
     Returns:
         user_id 或 None（认证失败）
     """
-    # 必须先接受连接，否则无法关闭
-    await websocket.accept()
-
-    # 验证 token
+    # 验证 token（在接受连接之前）
     try:
         payload = decode_token(token)
         user_id = str(payload.get("user_id"))
     except Exception as e:
+        # 必须先接受连接才能关闭
+        await websocket.accept()
         await websocket.close(code=4001, reason=f"Invalid token: {str(e)}")
         return None
 
-    # 记录连接
+    # 接受连接并记录
+    await websocket.accept()
     ws_manager.connections[user_id] = websocket
 
     try:
