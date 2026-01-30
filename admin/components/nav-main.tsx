@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { ChevronRight, type LucideIcon } from "lucide-react"
 import Link from "next/link"
 
@@ -34,9 +35,26 @@ export function NavMain({
             title: string
             url: string
             icon?: LucideIcon
+            isActive?: boolean
         }[]
     }[]
 }) {
+    // 跟踪当前展开的父级菜单（同一时间只展开一个）
+    const [openMenu, setOpenMenu] = useState<string | null>(null)
+
+    // 当 items 或 isActive 变化时，更新展开状态
+    useEffect(() => {
+        const activeItem = items.find(item => item.isActive)
+        if (activeItem) {
+            setOpenMenu(activeItem.title)
+        }
+    }, [items])
+
+    // 处理菜单展开/收起
+    const toggleMenu = (title: string) => {
+        setOpenMenu(prev => prev === title ? null : title)
+    }
+
     return (
         <SidebarGroup>
             <SidebarGroupLabel>平台菜单</SidebarGroupLabel>
@@ -47,6 +65,8 @@ export function NavMain({
                     const isCollapsible = hasChildren || item.menu_type === 'catalog'
                     // 如果是纯目录（不允许跳转），则主按钮作为触发器
                     const isCatalog = item.menu_type === 'catalog'
+                    const isOpen = openMenu === item.title
+
                     if (!isCollapsible) {
                         return (
                             <SidebarMenuItem key={item.title}>
@@ -64,7 +84,8 @@ export function NavMain({
                         <Collapsible
                             key={item.title}
                             asChild
-                            defaultOpen={item.isActive} // 保持当前激活的菜单展开
+                            open={isOpen}
+                            onOpenChange={() => toggleMenu(item.title)}
                             className="group/collapsible"
                         >
                             <SidebarMenuItem>
@@ -96,7 +117,7 @@ export function NavMain({
                                     <SidebarMenuSub>
                                         {item.items?.map((subItem) => (
                                             <SidebarMenuSubItem key={subItem.title}>
-                                                <SidebarMenuSubButton asChild>
+                                                <SidebarMenuSubButton asChild isActive={subItem.isActive}>
                                                     <Link href={subItem.url}>
                                                         {subItem.icon && <subItem.icon className="h-4 w-4 mr-2" />}
                                                         <span>{subItem.title}</span>
