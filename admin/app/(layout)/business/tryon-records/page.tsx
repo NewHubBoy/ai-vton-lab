@@ -9,9 +9,23 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Search, RefreshCw } from 'lucide-react'
+import { Search, RefreshCw, Trash2 } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
 import { TaskStatus, TaskType } from '@/lib/api'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { tasksApi } from '@/lib/api'
+import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 function TableSkeleton() {
   return (
@@ -25,6 +39,7 @@ function TableSkeleton() {
           <TableCell><Skeleton className="h-12 w-12 rounded" /></TableCell>
           <TableCell><Skeleton className="h-4 w-24" /></TableCell>
           <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-12" /></TableCell>
         </TableRow>
       ))}
     </>
@@ -47,6 +62,7 @@ const statusColors: Record<string, string> = {
 }
 
 export default function TryonRecordsPage() {
+  const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
   const [pageSize] = useState(10)
   const [filters, setFilters] = useState({
@@ -63,6 +79,18 @@ export default function TryonRecordsPage() {
 
   const records = recordsData?.data || []
   const total = recordsData?.total || 0
+
+  // Delete Mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => tasksApi.delete(id),
+    onSuccess: () => {
+      toast.success('删除成功')
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+    },
+    onError: (error) => {
+      toast.error('删除失败: ' + error.message)
+    },
+  })
 
   const handleSearch = () => {
     setPage(1)
@@ -125,6 +153,7 @@ export default function TryonRecordsPage() {
                 <TableHead className="w-20 text-center">预览</TableHead>
                 <TableHead className="w-32">创建时间</TableHead>
                 <TableHead className="w-32">完成时间</TableHead>
+                <TableHead className="w-20 text-center">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -132,7 +161,7 @@ export default function TryonRecordsPage() {
                 <TableSkeleton />
               ) : records.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">暂无换装合成记录</TableCell>
+                  <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">暂无换装合成记录</TableCell>
                 </TableRow>
               ) : (
                 records.map((record) => (
@@ -144,12 +173,16 @@ export default function TryonRecordsPage() {
                       <span className="text-sm">{record.username || record.user_id}</span>
                     </TableCell>
                     <TableCell>
-                      <Badge className={statusColors[record.status] || 'bg-gray-100'}>
-                        {record.status === TaskStatus.QUEUED && '排队中'}
-                        {record.status === TaskStatus.PROCESSING && '处理中'}
-                        {record.status === TaskStatus.SUCCEEDED && '完成'}
-                        {record.status === TaskStatus.FAILED && '失败'}
-                      </Badge>
+                      {record.is_deleted ? (
+                        <Badge className="bg-gray-100 text-gray-500">已删除</Badge>
+                      ) : (
+                        <Badge className={statusColors[record.status] || 'bg-gray-100'}>
+                          {record.status === TaskStatus.QUEUED && '排队中'}
+                          {record.status === TaskStatus.PROCESSING && '处理中'}
+                          {record.status === TaskStatus.SUCCEEDED && '完成'}
+                          {record.status === TaskStatus.FAILED && '失败'}
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="max-w-[200px] text-xs text-muted-foreground line-clamp-2">
@@ -168,7 +201,7 @@ export default function TryonRecordsPage() {
                             <img src={record.result?.images?.[0]} alt="Full Preview" className="w-full rounded" />
                             {record.result?.local_paths && (
                               <div className="mt-2 text-xs text-muted-foreground break-all">
-                                Local: {record.result.local_paths[0]}
+                                Local: {record.result?.local_paths?.[0]}
                               </div>
                             )}
                           </PopoverContent>
@@ -182,6 +215,31 @@ export default function TryonRecordsPage() {
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {record.finished_at ? formatDateTime(record.finished_at) : '-'}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {!record.is_deleted && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>确认删除?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                此操作将软删除该任务记录，删除后无法在列表中查看。
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>取消</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteMutation.mutate(record.id)} className="bg-red-500 hover:bg-red-600">
+                                确认删除
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

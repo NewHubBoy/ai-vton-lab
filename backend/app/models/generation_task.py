@@ -47,6 +47,9 @@ class GenerationTask(BaseModel):
     started_at = fields.DatetimeField(null=True, description="开始时间")
     finished_at = fields.DatetimeField(null=True, description="完成时间")
 
+    # 软删除
+    is_deleted = fields.BooleanField(default=False, description="是否删除")
+
     class Meta:
         table = "generation_task"
         ordering = ["-created_at"]

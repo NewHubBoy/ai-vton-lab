@@ -77,4 +77,12 @@ export const tasksApi = {
             `/api/v1/tasks/${query ? `?${query}` : ''}`
         );
     },
+
+    /**
+     * 删除任务 (软删除)
+     */
+    delete: (id: string): Promise<void> =>
+        request<void>(`/api/v1/tasks/${id}`, {
+            method: 'DELETE',
+        }),
 };

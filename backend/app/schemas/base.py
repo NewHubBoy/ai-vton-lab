@@ -20,17 +20,21 @@ class Success(JSONResponse):
         content = {"code": code, "msg": msg, "data": data}
         content.update(kwargs)
 
-        # 递归处理 datetime 序列化
-        def convert_datetime(obj):
+        # 递归处理 datetime 和 UUID 序列化
+        from uuid import UUID
+
+        def convert_types(obj):
             if isinstance(obj, datetime):
                 return obj.isoformat()
+            elif isinstance(obj, UUID):
+                return str(obj)
             elif isinstance(obj, dict):
-                return {k: convert_datetime(v) for k, v in obj.items()}
+                return {k: convert_types(v) for k, v in obj.items()}
             elif isinstance(obj, list):
-                return [convert_datetime(item) for item in obj]
+                return [convert_types(item) for item in obj]
             return obj
 
-        content = convert_datetime(content)
+        content = convert_types(content)
         super().__init__(content=content, status_code=code)
 
 
@@ -49,17 +53,21 @@ class Fail(JSONResponse):
         content = {"code": code, "msg": msg, "data": data}
         content.update(kwargs)
 
-        # 递归处理 datetime 序列化
-        def convert_datetime(obj):
+        # 递归处理 datetime 和 UUID 序列化
+        from uuid import UUID
+
+        def convert_types(obj):
             if isinstance(obj, datetime):
                 return obj.isoformat()
+            elif isinstance(obj, UUID):
+                return str(obj)
             elif isinstance(obj, dict):
-                return {k: convert_datetime(v) for k, v in obj.items()}
+                return {k: convert_types(v) for k, v in obj.items()}
             elif isinstance(obj, list):
-                return [convert_datetime(item) for item in obj]
+                return [convert_types(item) for item in obj]
             return obj
 
-        content = convert_datetime(content)
+        content = convert_types(content)
         super().__init__(content=content, status_code=code)
 
 
@@ -79,10 +87,7 @@ class SuccessExtra(JSONResponse):
         if isinstance(data, BaseModel):
             data = data.model_dump()
         elif isinstance(data, list):
-            data = [
-                item.model_dump() if isinstance(item, BaseModel) else item
-                for item in data
-            ]
+            data = [item.model_dump() if isinstance(item, BaseModel) else item for item in data]
 
         content = {
             "code": code,
@@ -94,15 +99,19 @@ class SuccessExtra(JSONResponse):
         }
         content.update(kwargs)
 
-        # 递归处理 datetime 序列化
-        def convert_datetime(obj):
+        # 递归处理 datetime 和 UUID 序列化
+        from uuid import UUID
+
+        def convert_types(obj):
             if isinstance(obj, datetime):
                 return obj.isoformat()
+            elif isinstance(obj, UUID):
+                return str(obj)
             elif isinstance(obj, dict):
-                return {k: convert_datetime(v) for k, v in obj.items()}
+                return {k: convert_types(v) for k, v in obj.items()}
             elif isinstance(obj, list):
-                return [convert_datetime(item) for item in obj]
+                return [convert_types(item) for item in obj]
             return obj
 
-        content = convert_datetime(content)
+        content = convert_types(content)
         super().__init__(content=content, status_code=code)

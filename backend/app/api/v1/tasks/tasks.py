@@ -82,7 +82,7 @@ async def list_tasks(
     query = GenerationTask.filter(user_id=str(current_user.id))
 
     if task_type:
-        query = query.filter(task_type=task_type)
+        query = query.filter(task_type=task_type, is_deleted=False)
     if status:
         query = query.filter(status=status)
 
@@ -111,3 +111,15 @@ async def get_task(task_id: str, current_user: User = Depends(AuthControl.is_aut
         raise HTTPException(status_code=404, detail="Task not found")
 
     return Success(data=GenerationTaskResponse.model_validate(task))
+
+
+@router.delete("/{task_id}", summary="删除任务 (软删除)")
+async def delete_task(task_id: str, current_user: User = Depends(AuthControl.is_authed)):
+    task = await GenerationTask.get_or_none(id=task_id, user_id=str(current_user.id))
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    task.is_deleted = True
+    await task.save()
+
+    return Success(msg="Deleted successfully (soft delete)")

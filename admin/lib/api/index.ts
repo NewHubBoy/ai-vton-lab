@@ -452,6 +452,7 @@ export interface GenerationTask {
   created_at: string
   started_at?: string
   finished_at?: string
+  is_deleted: boolean
 }
 
 export interface TaskListParams {
@@ -480,6 +481,10 @@ export const tasksApi = {
   // Create task
   create: (data: any) =>
     apiClient.post<GenerationTask>('/tasks/generate', data),
+
+  // Delete task
+  delete: (id: string) =>
+    apiClient.delete<null>(`/tasks/${id}`),
 }
 
 // ============ Templates APIs ============

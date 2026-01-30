@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
+from uuid import UUID
 from pydantic import BaseModel, Field
 
 # ============ Enums ============
@@ -95,7 +96,7 @@ class TaskModelResponse(TaskModelParams):
 class GenerationTaskResponse(BaseModel):
     """通用任务响应"""
 
-    id: str
+    id: UUID | str
     user_id: str
     task_type: TaskType
     status: TaskStatus
@@ -107,6 +108,7 @@ class GenerationTaskResponse(BaseModel):
     created_at: datetime
     started_at: Optional[datetime]
     finished_at: Optional[datetime]
+    is_deleted: bool = False
 
     # 子表数据
     tryon: Optional[TaskTryonResponse] = None
