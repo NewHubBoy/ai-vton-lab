@@ -22,6 +22,7 @@ async def create_task(request: CreateTaskRequest, current_user: User = Depends(A
         task_type=request.task_type,
         status=TaskStatus.QUEUED,
         prompt=request.prompt,
+        prompt_configs=request.prompt_configs,
         aspect_ratio=request.aspect_ratio,
         quality=request.quality,
         platform=request.platform,

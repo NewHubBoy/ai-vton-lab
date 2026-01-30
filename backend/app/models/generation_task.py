@@ -35,6 +35,9 @@ class GenerationTask(BaseModel):
     aspect_ratio = fields.CharField(max_length=16, null=True, description="图片比例 3:4/9:16/1:1")
     quality = fields.CharField(max_length=16, default="1K", description="图片质量 1K/2K/4K")
 
+    # 动态提示词配置
+    prompt_configs = fields.JSONField(null=True, description="动态配置 {group_key: [option_key]}")
+
     # 结果与错误
     result = fields.JSONField(null=True, description="通用结果数据")
     error = fields.JSONField(null=True, description="错误信息 {code, message}")

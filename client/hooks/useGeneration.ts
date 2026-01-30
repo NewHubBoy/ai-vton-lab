@@ -7,6 +7,7 @@ import { tasksApi } from '@/lib/api';
 import { useWebSocket } from './useWebSocket';
 import { TaskType } from '@/lib/api/types';
 import type { ImageFile } from '@/lib/store/types';
+import type { DynamicConfigValues } from '@/lib/store/settingsSlice';
 
 const POLL_INTERVAL = 2000; // 轮询间隔 2 秒
 const MAX_POLL_ATTEMPTS = 60; // 最大轮询次数（2分钟）
@@ -23,6 +24,24 @@ async function uploadImageToOss(image: ImageFile | null): Promise<string | null>
         console.error('上传图片失败:', error);
         throw error;
     }
+}
+
+/**
+ * 转换 dynamicConfigs 为后端格式
+ * @param configs 前端的动态配置 {group_key: value}
+ * @returns 后端格式 {group_key: [option_key, ...]}
+ */
+function formatPromptConfigs(configs: DynamicConfigValues): Record<string, string[]> {
+    const result: Record<string, string[]> = {};
+    for (const [key, value] of Object.entries(configs)) {
+        if (typeof value === 'string') {
+            result[key] = [value];
+        } else if (Array.isArray(value)) {
+            result[key] = value;
+        }
+        // boolean 类型跳过，不用于 prompt 组装
+    }
+    return result;
 }
 
 interface UseGenerationOptions {
@@ -50,6 +69,7 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
         setJobId,
         setResultImage,
         setError,
+        triggerHistoryRefresh,
     } = useTryOnStore();
 
     const { isConnected, subscribe, onTaskUpdate } = useWebSocket();
@@ -81,6 +101,8 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
                 if (task.status === 'succeeded' && task.result?.images?.[0]) {
                     setResultImage(task.result.images[0]);
                     setIsGenerating(false);
+                    triggerHistoryRefresh();
+                    toast.success('换装完成！');
                     clearPolling();
                 } else if (task.status === 'failed') {
                     setError(task.error?.message || '生成失败');
@@ -97,7 +119,7 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
                 clearPolling();
             }
         },
-        [setResultImage, setError, setIsGenerating, clearPolling]
+        [setResultImage, setError, setIsGenerating, clearPolling, triggerHistoryRefresh]
     );
 
     // 生成图像
@@ -136,11 +158,15 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
             // Create task based on type
             // Currently focusing on TRYON as per error context
             if (taskType === TaskType.TRYON) {
+                // 构建 prompt_configs
+                const promptConfigs = formatPromptConfigs(dynamicConfigs);
+
                 // @ts-ignore: Payload type casting to satisfy stricter local types vs flexible API usage
                 const { data: response } = await tasksApi.create({
                     task_type: TaskType.TRYON,
+                    prompt_configs: Object.keys(promptConfigs).length > 0 ? promptConfigs : undefined,
                     aspect_ratio: aspectRatio,
-                    resolution: resolution,
+                    quality: resolution,
                     tryon: {
                         person_image: modelUrl,
                         garment_image: garmentUrl,
@@ -158,15 +184,14 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
                     pollTimerRef.current = setTimeout(() => pollTaskStatus(response.id), POLL_INTERVAL);
                 }
             } else {
-                // Fallback for other types (model/detail) - to be implemented/verified
-                // For now, retain basic structure or throw not implemented if unsure, 
-                // but let's try to infer standard structure
+                // Fallback for other types (model/detail)
+                const promptConfigs = formatPromptConfigs(dynamicConfigs);
+
                 const { data: response } = await tasksApi.create({
                     task_type: taskType,
+                    prompt_configs: Object.keys(promptConfigs).length > 0 ? promptConfigs : undefined,
                     aspect_ratio: aspectRatio,
-                    resolution: resolution,
-                    // Pass dynamic configs as extra options for now if needed, though schema might not support it directly
-                    // This path might need further refinement based on Model/Detail schemas
+                    quality: resolution,
                 } as any);
                 setJobId(response.id);
                 if (isConnected) subscribe(response.id);
@@ -205,6 +230,7 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
                     setResultImage(imageUrl);
                 }
                 setIsGenerating(false);
+                triggerHistoryRefresh();
                 toast.success('换装完成！');
             } else if (msg.status === 'failed') {
                 const error = msg.error as { message?: string } | undefined;
@@ -216,7 +242,7 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
         });
 
         return unsubscribe;
-    }, [onTaskUpdate, setResultImage, setError, setIsGenerating]);
+    }, [onTaskUpdate, setResultImage, setError, setIsGenerating, triggerHistoryRefresh]);
 
     // 组件卸载时清理
     useEffect(() => {

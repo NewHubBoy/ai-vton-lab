@@ -17,6 +17,10 @@ export interface GenerationSlice {
   error: string | null;
   setError: (error: string | null) => void;
 
+  // History 刷新触发器
+  historyVersion: number;
+  triggerHistoryRefresh: () => void;
+
   canGenerate: () => boolean;
 }
 
@@ -37,6 +41,10 @@ export const createGenerationSlice: StateCreator<
 
   error: null,
   setError: (error) => set({ error }),
+
+  // History 刷新触发器
+  historyVersion: 0,
+  triggerHistoryRefresh: () => set((state) => ({ historyVersion: state.historyVersion + 1 })),
 
   canGenerate: () => {
     const state = get() as GenerationSlice & ModelSlice & GarmentSlice;

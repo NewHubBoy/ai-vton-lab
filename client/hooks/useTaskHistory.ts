@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { tasksApi, GenerationTask } from '@/lib/api';
+import { useTryOnStore } from '@/lib/store';
 
 interface UseTaskHistoryOptions {
     pageSize?: number;
@@ -26,6 +27,9 @@ export function useTaskHistory(options: UseTaskHistoryOptions = {}): UseTaskHist
     const [page, setPage] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // 监听 historyVersion 变化自动刷新
+    const historyVersion = useTryOnStore((state) => state.historyVersion);
 
     const fetchTasks = useCallback(
         async (newPage: number, append = false) => {
@@ -69,6 +73,13 @@ export function useTaskHistory(options: UseTaskHistoryOptions = {}): UseTaskHist
             fetchTasks(1, false);
         }
     }, [autoFetch, fetchTasks]);
+
+    // 当 historyVersion 变化时自动刷新
+    useEffect(() => {
+        if (historyVersion > 0) {
+            fetchTasks(1, false);
+        }
+    }, [historyVersion, fetchTasks]);
 
     return {
         tasks,

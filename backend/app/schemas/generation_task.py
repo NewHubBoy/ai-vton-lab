@@ -69,6 +69,9 @@ class CreateTaskRequest(TaskBase):
 
     task_type: TaskType = Field(..., description="任务类型")
 
+    # 动态提示词配置
+    prompt_configs: Optional[Dict[str, List[str]]] = Field(None, description="动态配置 {group_key: [option_key, ...]}")
+
     # 类型特定参数 (选填，根据 task_type 校验)
     tryon: Optional[TaskTryonParams] = Field(None, description="试穿参数")
     detail: Optional[TaskDetailParams] = Field(None, description="详情页参数")

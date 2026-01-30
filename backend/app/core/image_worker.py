@@ -21,6 +21,7 @@ from typing import Optional, List, Dict, Any
 from app.models.generation_task import GenerationTask, TaskStatus, TaskType
 from app.core.ws_manager import ws_manager
 from app.core.image_client import generate_image
+from app.services.prompt_assembler import PromptAssembler
 from app.settings.config import settings
 from app.utils.oss_utils import get_oss_uploader
 
@@ -100,12 +101,22 @@ async def process_single_task(task: GenerationTask) -> bool:
     # 调用生成（支持重试）
     last_error = None
 
-    # 准备生成参数 (根据不同 task_type 可能需要不同处理，这里暂时先取通用 prompt)
-    # TODO: 根据 task_tryon / task_detail 等扩展不同参数
-    prompt = task.prompt or "Default prompt"
-
     # 如果是 Tryon 任务，可能需要获取图片路径
     await task.fetch_related("tryon", "detail", "detail__template", "model_gen")
+
+    # 准备提示词：使用 PromptAssembler 组装或使用默认 prompt
+    prompt = task.prompt or ""
+    if task.prompt_configs:
+        try:
+            assembler = PromptAssembler(task.task_type.value)
+            assembled = await assembler.assemble(task.prompt_configs, task.prompt)
+            prompt = assembled.positive_prompt
+            print(f"[ImageWorker] Assembled prompt: {prompt[:100]}...")
+        except Exception as e:
+            print(f"[ImageWorker] PromptAssembler error: {e}, using fallback")
+            prompt = task.prompt or "Default prompt"
+    else:
+        prompt = task.prompt or "Default prompt"
 
     # 准备参考图片
     reference_images = []
