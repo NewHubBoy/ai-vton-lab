@@ -40,20 +40,21 @@ class ConnectionManager:
 
     async def connect(self, user_id: str, websocket: WebSocket) -> bool:
         """
-        建立 WebSocket 连接
+        记录 WebSocket 连接（不调用 accept，由调用方负责）
 
         Args:
             user_id: 用户ID
             websocket: WebSocket 连接
 
         Returns:
-            是否连接成功
+            是否记录成功
         """
         try:
-            await websocket.accept()
             self.connections[user_id] = websocket
+            print(f"[WS] User {user_id} connected, total: {len(self.connections)}")
             return True
-        except Exception:
+        except Exception as e:
+            print(f"[WS] Connect error: {e}")
             return False
 
     def disconnect(self, user_id: str):
@@ -74,15 +75,25 @@ class ConnectionManager:
         Returns:
             是否发送成功
         """
-        if user_id in self.connections:
-            try:
-                await self.connections[user_id].send_json(message)
-                return True
-            except Exception:
-                # 连接可能已断开，清理
+        if user_id not in self.connections:
+            print(f"[WS] User {user_id} not connected")
+            return False
+
+        ws = self.connections[user_id]
+        try:
+            # 检查连接状态
+            if ws.client_state.name != "CONNECTED":
+                print(f"[WS] User {user_id} connection not in CONNECTED state")
                 self.disconnect(user_id)
                 return False
-        return False
+
+            await ws.send_json(message)
+            return True
+        except Exception as e:
+            print(f"[WS] Send error to {user_id}: {e}")
+            # 连接可能已断开，清理
+            self.disconnect(user_id)
+            return False
 
     async def push_task_update(
         self,

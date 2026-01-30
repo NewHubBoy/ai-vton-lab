@@ -27,9 +27,19 @@ async def lifespan(app: FastAPI):
     # 启动图像生成 Worker（在主事件循环中运行）
     from app.core.image_worker import worker_loop
     import asyncio
+
     asyncio.create_task(worker_loop())
 
+    # 启动 WebSocket 心跳
+    from app.core.ws_manager import ws_manager
+
+    await ws_manager.start_heartbeat(interval=30)
+    print("[WS] Heartbeat started")
+
     yield
+
+    # 关闭 WebSocket 心跳
+    await ws_manager.stop_heartbeat()
     await Tortoise.close_connections()
 
 

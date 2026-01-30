@@ -75,6 +75,7 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
     const { isConnected, subscribe, onTaskUpdate } = useWebSocket();
     const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
     const pollAttemptsRef = useRef(0);
+    const taskProcessedRef = useRef(false);  // 混合模式：避免重复处理
 
     // 清理轮询
     const clearPolling = useCallback(() => {
@@ -99,12 +100,16 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
                 const { data: task } = await tasksApi.getDetail(taskId);
 
                 if (task.status === 'succeeded' && task.result?.images?.[0]) {
+                    if (taskProcessedRef.current) return;  // 已由 WebSocket 处理
+                    taskProcessedRef.current = true;
                     setResultImage(task.result.images[0]);
                     setIsGenerating(false);
                     triggerHistoryRefresh();
                     toast.success('换装完成！');
                     clearPolling();
                 } else if (task.status === 'failed') {
+                    if (taskProcessedRef.current) return; // 已由 WebSocket 处理
+                    taskProcessedRef.current = true;
                     setError(task.error?.message || '生成失败');
                     setIsGenerating(false);
                     clearPolling();
@@ -129,6 +134,7 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
         setIsGenerating(true);
         setError(null);
         setResultImage(null);
+        taskProcessedRef.current = false;  // 重置处理标记
         clearPolling();
 
         try {
@@ -178,10 +184,10 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
 
                 setJobId(response.id);
 
+                // 混合模式：始终启用轮询 + WebSocket
+                pollTimerRef.current = setTimeout(() => pollTaskStatus(response.id), POLL_INTERVAL);
                 if (isConnected) {
                     subscribe(response.id);
-                } else {
-                    pollTimerRef.current = setTimeout(() => pollTaskStatus(response.id), POLL_INTERVAL);
                 }
             } else {
                 // Fallback for other types (model/detail)
@@ -194,8 +200,12 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
                     quality: resolution,
                 } as any);
                 setJobId(response.id);
-                if (isConnected) subscribe(response.id);
-                else pollTimerRef.current = setTimeout(() => pollTaskStatus(response.id), POLL_INTERVAL);
+
+                // 混合模式：始终启用轮询 + WebSocket
+                pollTimerRef.current = setTimeout(() => pollTaskStatus(response.id), POLL_INTERVAL);
+                if (isConnected) {
+                    subscribe(response.id);
+                }
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : '创建任务失败');
@@ -223,6 +233,10 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
     useEffect(() => {
         const unsubscribe = onTaskUpdate((msg) => {
             if (msg.status === 'succeeded' && msg.result) {
+                if (taskProcessedRef.current) return;  // 已由轮询处理
+                taskProcessedRef.current = true;
+                clearPolling();  // 清理轮询
+
                 const result = msg.result as { images?: { oss_url?: string; url?: string }[] };
                 // 优先使用 oss_url，其次是 url
                 const imageUrl = result.images?.[0]?.oss_url || result.images?.[0]?.url;
@@ -233,6 +247,10 @@ export function useGeneration(options: UseGenerationOptions = {}): UseGeneration
                 triggerHistoryRefresh();
                 toast.success('换装完成！');
             } else if (msg.status === 'failed') {
+                if (taskProcessedRef.current) return;  // 已由轮询处理
+                taskProcessedRef.current = true;
+                clearPolling();  // 清理轮询
+
                 const error = msg.error as { message?: string } | undefined;
                 const errorMsg = error?.message || '生成失败';
                 setError(errorMsg);
